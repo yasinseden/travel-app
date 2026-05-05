@@ -1,0 +1,20 @@
+<div class="page-container">
+  <div #globeContainer class="globe-container"></div>
+
+  <button class="sidebar-toggle" [class.closed]="!isSidebarOpen" (click)="toggleSidebar()">
+    {{ isSidebarOpen ? '❯' : '❮ Ülkeler' }}
+  </button>
+
+  <div class="sidebar" [class.closed]="!isSidebarOpen">
+    <div class="sidebar-header">
+      <h2>Ülkeler</h2>
+    </div>
+    <ul class="country-list">
+      <li *ngFor="let country of countriesList" (click)="onCountryClick(country)" class="country-item">
+        <span *ngIf="country.iso" class="fi fi-{{ country.iso.toLowerCase() }} flag-icon"></span>
+        <span *ngIf="!country.iso" class="flag-icon flag-placeholder">🌐</span>
+        <span class="name">{{ country.name }}</span>
+      </li>
+    </ul>
+  </div>
+</div>

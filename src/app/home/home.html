@@ -1,0 +1,44 @@
+<div class="home-container p-5">
+  <div class="flex justify-content-between align-items-center mb-4">
+    <h1 class="text-3xl font-bold m-0">E-Dergilerim</h1>
+    <button class="p-button p-component p-button-primary" (click)="createNew()">
+      <span class="p-button-icon pi pi-plus mr-2"></span>
+      <span class="p-button-label">Yeni E-Dergi Oluştur</span>
+    </button>
+  </div>
+
+  <div class="grid">
+    <div class="col-12 md:col-6 lg:col-4 xl:col-3" *ngFor="let mag of magazines">
+      <div class="card shadow-2 border-round p-3 h-full flex flex-column bg-white relative hover:shadow-4 transition-duration-200">
+        <h3 class="mt-0 mb-2 text-xl" style="padding-right: 2rem;">{{ mag.title || 'İsimsiz E-Dergi' }}</h3>
+        <p class="text-500 m-0 mb-4 text-sm line-height-3">
+          <strong>Sayfa Sayısı:</strong> {{ mag.pages.length }} <br>
+          <strong>Oluşturulma:</strong> {{ mag.createdAt | date:'shortDate' }}
+        </p>
+        <div class="mt-auto flex gap-2">
+          <button class="p-button p-component p-button-sm p-button-outlined flex-1 justify-content-center" (click)="editMagazine(mag.id)">
+            <span class="p-button-icon pi pi-pencil mr-2"></span>
+            Düzenle
+          </button>
+          <button class="p-button p-component p-button-sm p-button-success flex-1 justify-content-center" (click)="viewMagazine(mag.id)">
+            <span class="p-button-icon pi pi-eye mr-2"></span>
+            Görüntüle
+          </button>
+        </div>
+        <button class="p-button p-component p-button-danger p-button-text p-button-rounded absolute top-0 right-0 m-2"
+                style="width: 2rem; height: 2rem; padding: 0;"
+                (click)="deleteMagazine(mag.id, $event)" title="Dergiyi Sil">
+          <span class="pi pi-trash"></span>
+        </button>
+      </div>
+    </div>
+    
+    <div class="col-12" *ngIf="magazines.length === 0">
+      <div class="text-center p-5 surface-100 border-round border-1 border-300">
+        <i class="pi pi-book text-6xl text-400 mb-3 block"></i>
+        <p class="text-600 text-lg m-0 mb-3">Henüz hiç e-dergi oluşturulmamış.</p>
+        <button class="p-button p-component p-button-outlined" (click)="createNew()">Hemen Oluştur</button>
+      </div>
+    </div>
+  </div>
+</div>

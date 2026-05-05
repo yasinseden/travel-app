@@ -1,0 +1,88 @@
+<div class="canvas-item-wrapper" [class.selected]="isSelected" [style.left.px]="element.x" [style.top.px]="element.y"
+  [style.width.px]="element.width" [style.height.px]="element.height" [style.z-index]="element.zIndex"
+  [style.transform]="'rotate(' + (element.rotation || 0) + 'deg)'" (mousedown)="onMouseDown($event)">
+
+  <!-- Inline Text Properties Toolbar -->
+  <div class="text-toolbar" *ngIf="isSelected && element.type === 'text'" (mousedown)="$event.stopPropagation()">
+    <select [(ngModel)]="element.fontFamily" (change)="emitChange()">
+      <option *ngFor="let font of fontFamilies" [value]="font">{{ font }}</option>
+    </select>
+    <input type="number" [(ngModel)]="element.fontSize" (change)="emitChange()" title="Font Size" />
+    <select [(ngModel)]="element.fontWeight" (change)="emitChange()">
+      <option value="normal">Normal</option>
+      <option value="bold">Bold</option>
+      <option value="300">Light</option>
+    </select>
+    <input type="color" [(ngModel)]="element.color" (change)="emitChange()" />
+  </div>
+
+  <!-- Action buttons (Drag, Z-index, Delete) -->
+  <div class="item-actions" *ngIf="isSelected">
+    <button class="drag-handle" (mousedown)="onDragStart($event)" style="cursor: grab;" title="Sürükle">
+      <i class="pi pi-arrows-alt"></i>
+    </button>
+
+    <select [(ngModel)]="element.frame" (change)="emitChange()" class="frame-select" title="Çerçeve Seç"
+      (mousedown)="$event.stopPropagation()">
+      <option value="none">Çerçevesiz</option>
+      <option value="solid">Düz Çerçeve</option>
+      <option value="polaroid">Polaroid</option>
+      <option value="elegant">Zarif (Shadow)</option>
+    </select>
+
+    <div class="divider"></div>
+    <div class="flex align-items-center" style="gap: 4px; padding: 0 4px;" (mousedown)="$event.stopPropagation()">
+      <input type="color" [(ngModel)]="element.backgroundColor" (change)="emitChange()" title="Arkaplan Rengi"
+        style="width:24px;height:24px;padding:0;border:none;background:transparent;cursor:pointer;" />
+      <input type="range" [(ngModel)]="element.opacity" (input)="emitChange()" min="0" max="1" step="0.05"
+        title="Opaklık" style="width:50px; cursor:pointer;" />
+    </div>
+
+    <div class="divider"></div>
+    <button (click)="element.zIndex = element.zIndex + 1; emitChange(); $event.stopPropagation()" title="Öne Getir">
+      <i class="pi pi-arrow-up"></i>
+    </button>
+    <button (click)="element.zIndex = element.zIndex - 1; emitChange(); $event.stopPropagation()" title="Arkaya Gönder">
+      <i class="pi pi-arrow-down"></i>
+    </button>
+    <div class="divider"></div>
+    <button class="delete-btn" (click)="remove.emit(); $event.stopPropagation()" title="Sil">
+      <i class="pi pi-trash"></i>
+    </button>
+  </div>
+
+  <!-- Content depending on type -->
+  <div class="content-frame-wrapper" [ngClass]="'frame-' + (element.frame || 'none')"
+    [style.opacity]="element.opacity !== undefined ? element.opacity : 1"
+    [style.background-color]="element.backgroundColor || 'transparent'">
+    <ng-container [ngSwitch]="element.type">
+
+      <img *ngSwitchCase="'image'" [src]="element.content" class="item-content" draggable="false">
+
+      <video *ngSwitchCase="'video'" [src]="element.content" controls class="item-content" draggable="false"></video>
+
+      <textarea *ngSwitchCase="'text'" class="item-content text-content" [(ngModel)]="element.content"
+        (change)="emitChange()" [style.font-family]="element.fontFamily" [style.font-size.px]="element.fontSize"
+        [style.font-weight]="element.fontWeight" [style.color]="element.color"
+        style="resize: none; border: none; box-sizing: border-box; background: transparent; outline: none; overflow: hidden;">
+      </textarea>
+
+    </ng-container>
+  </div>
+
+  <!-- Resize handles and Rotation handle (only show when selected) -->
+  <ng-container *ngIf="isSelected">
+    <div class="rotate-handle" (mousedown)="onRotateStart($event)">
+      <i class="pi pi-sync"></i>
+    </div>
+
+    <div class="resize-handle n" (mousedown)="onResizeStart($event, 'n')"></div>
+    <div class="resize-handle e" (mousedown)="onResizeStart($event, 'e')"></div>
+    <div class="resize-handle s" (mousedown)="onResizeStart($event, 's')"></div>
+    <div class="resize-handle w" (mousedown)="onResizeStart($event, 'w')"></div>
+    <div class="resize-handle nw" (mousedown)="onResizeStart($event, 'nw')"></div>
+    <div class="resize-handle ne" (mousedown)="onResizeStart($event, 'ne')"></div>
+    <div class="resize-handle sw" (mousedown)="onResizeStart($event, 'sw')"></div>
+    <div class="resize-handle se" (mousedown)="onResizeStart($event, 'se')"></div>
+  </ng-container>
+</div>
