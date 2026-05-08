@@ -24,11 +24,7 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "node_modules/@cesdk/cesdk-js/assets",
-                "output": "assets/cesdk"
-              }
+              "src/assets"
             ],
             "styles": [
               "node_modules/primeicons/primeicons.css",

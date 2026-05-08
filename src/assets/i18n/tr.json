@@ -1,0 +1,36 @@
+{
+  "LOGIN": {
+    "TITLE": "Giriş Yap!",
+    "SUBTITLE": "Tekrar hoş geldiniz! Lütfen bilgilerinizi girin.",
+    "EMAIL": "E-posta",
+    "EMAIL_PLACEHOLDER": "E-postanızı girin",
+    "PASSWORD": "Şifre",
+    "REMEMBER_ME": "Beni hatırla",
+    "FORGOT_PASSWORD": "Şifremi unuttum?",
+    "LOG_IN": "Giriş Yap",
+    "SIGN_UP_PROMPT": "Hesabınız yok mu? ",
+    "SIGN_UP": "Kayıt Ol",
+    "OR_CONTINUE": "Veya şununla devam et",
+    "WELCOME_BACK": "Tekrar Hoş Geldiniz!"
+  },
+  "QUOTES": [
+    "Hayat kısa, dünya geniş.",
+    "Herkes ölür ama herkes yaşamaz.",
+    "Eşya değil, anı biriktirin.",
+    "Seyahat, sizi daha zengin yapan tek şeydir.",
+    "Macera her zaman değerlidir.",
+    "Gezginlerin hepsi kaybolmuş değildir.",
+    "Bin millik yolculuk tek bir adımla başlar."
+  ],
+  "NAV": {
+    "HOME": "Ana Sayfa",
+    "EXPLORE": "Keşfet",
+    "PROJECTS": "Projeler"
+  },
+  "HOME": {
+    "TITLE": "Gez & Tasarla",
+    "SUBTITLE": "Dünyayı keşfedin ve kendi derginizi tasarlayın.",
+    "EXPLORE_GLOBE": "Dünyayı Keşfet",
+    "MAGAZINE_PROJECTS": "E-Dergi Projeleri"
+  }
+}

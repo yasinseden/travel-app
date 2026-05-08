@@ -24,7 +24,8 @@ export class InteractiveGlobeComponent implements OnInit, AfterViewInit, OnDestr
   private navSubscription?: Subscription;
 
   // Renk paleti
-  private colorPalette = ['#71f3b6ff', '#79e8d7ff', '#72caff', '#0f766e', '#43cf62ff', '#51d1d1ff', '#2af166ff', '#55ce7eff'];
+  // Renk paleti - Turquoise & Green tones
+  private colorPalette = ['#14b8a6', '#0f766e', '#22c55e', '#15803d', '#5eead4', '#86efac', '#0d9488', '#16a34a'];
 
   countriesList: CountryItem[] = [];
   isSidebarOpen: boolean = true; // Sidebar açık olarak başlar
@@ -51,7 +52,7 @@ export class InteractiveGlobeComponent implements OnInit, AfterViewInit, OnDestr
       this.myGlobe = GlobeFactory()(this.globeContainer.nativeElement)
         .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg') // Kaplama
         .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png') // Derinlik/yükselti
-        .backgroundColor('rgba(0,0,0,0)') // Arka planı transparan yapıp CSS'ten kontrol edebilirsin
+        .backgroundColor('#eefbf9') // Modern turkuaz tonlu arka plan
         .pointOfView({ altitude: 2.5 }, 4000); // Başlangıç animasyonu
 
       // Ülkelerin GeoJSON verisini çek ve küreye ekle

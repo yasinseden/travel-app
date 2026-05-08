@@ -19,36 +19,49 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      background-color: #040d21;
-      color: #DAFFFB;
-      font-family: 'Inter', sans-serif;
+      height: calc(100vh - 72px);
+      background-color: var(--bg-main);
+      color: var(--text-main);
     }
     h1 {
-      font-size: 4rem;
+      font-size: 5rem;
       margin-bottom: 1rem;
-      background: linear-gradient(90deg, #64CCC5, #a855f7);
+      font-weight: 800;
+      letter-spacing: -2px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
+    p {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
     .back-btn {
       position: absolute;
-      top: 2rem;
-      left: 2rem;
-      color: #64CCC5;
+      top: 3rem;
+      left: 3rem;
+      color: var(--primary);
       text-decoration: none;
-      font-size: 1.2rem;
-      transition: color 0.3s;
+      font-size: 1.1rem;
+      font-weight: 700;
+      transition: all 0.3s;
+      padding: 0.8rem 1.5rem;
+      background: var(--white);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
     }
     .back-btn:hover {
-      color: #DAFFFB;
+      background: var(--primary);
+      color: white;
+      transform: translateX(-5px);
     }
   `]
 })
 export class CountryDetailComponent implements OnInit {
   countryName: string = '';
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(private route: ActivatedRoute) { }
 
   ngOnInit() {
     this.countryName = this.route.snapshot.paramMap.get('name') || 'Bilinmeyen Ülke';

@@ -1,0 +1,36 @@
+{
+  "LOGIN": {
+    "TITLE": "Jetzt einloggen!",
+    "SUBTITLE": "Willkommen zurück! Bitte geben Sie Ihre Daten ein.",
+    "EMAIL": "E-Mail",
+    "EMAIL_PLACEHOLDER": "Geben Sie Ihre E-Mail ein",
+    "PASSWORD": "Passwort",
+    "REMEMBER_ME": "Angemeldet bleiben",
+    "FORGOT_PASSWORD": "Passwort vergessen?",
+    "LOG_IN": "Einloggen",
+    "SIGN_UP_PROMPT": "Sie haben noch kein Konto? ",
+    "SIGN_UP": "Registrieren",
+    "OR_CONTINUE": "Oder weiter mit",
+    "WELCOME_BACK": "Willkommen zurück!"
+  },
+  "QUOTES": [
+    "Das Leben ist kurz, die Welt ist groß.",
+    "Jeder stirbt, aber nicht jeder lebt.",
+    "Sammle Momente, nicht Dinge.",
+    "Reisen ist das Einzige, was man kauft, das einen reicher macht.",
+    "Abenteuer lohnt sich immer.",
+    "Nicht alle, die umherwandern, sind verloren.",
+    "Eine Reise von tausend Meilen beginnt mit einem einzigen Schritt."
+  ],
+  "NAV": {
+    "HOME": "Startseite",
+    "EXPLORE": "Erkunden",
+    "PROJECTS": "Projekte"
+  },
+  "HOME": {
+    "TITLE": "Reisen & Gestalten",
+    "SUBTITLE": "Erkunden Sie die Welt und entwerfen Sie Ihr eigenes Magazin.",
+    "EXPLORE_GLOBE": "Globus erkunden",
+    "MAGAZINE_PROJECTS": "E-Magazin Projekte"
+  }
+}

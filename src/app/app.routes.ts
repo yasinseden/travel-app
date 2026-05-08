@@ -2,11 +2,14 @@ import { Routes } from '@angular/router';
 import { AppHome } from './home/home';
 import { CanvasEditor } from './canvas-editor/canvas-editor';
 import { MagazineViewer } from './magazine-viewer/magazine-viewer';
-import { ImgLyCanvasEditor } from './img.ly-canvas-editor/img.ly-canvas-editor';
+import { MagazineList } from './magazine-list/magazine-list';
+import { Login } from './login/login';
 
 export const routes: Routes = [
+  { path: 'login', component: Login },
   { path: '', component: AppHome },
-  { path: 'img-ly', component: ImgLyCanvasEditor },
+  { path: 'magazines', component: MagazineList },
+
   { path: 'edit', component: CanvasEditor },
   { path: 'edit/:id', component: CanvasEditor },
   { path: 'view/:id', component: MagazineViewer },

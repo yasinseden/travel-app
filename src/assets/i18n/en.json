@@ -1,0 +1,36 @@
+{
+  "LOGIN": {
+    "TITLE": "Login Now!",
+    "SUBTITLE": "Welcome back! Please enter your details.",
+    "EMAIL": "Email",
+    "EMAIL_PLACEHOLDER": "Enter your email",
+    "PASSWORD": "Password",
+    "REMEMBER_ME": "Remember me",
+    "FORGOT_PASSWORD": "Forgot password?",
+    "LOG_IN": "Log In",
+    "SIGN_UP_PROMPT": "Don't have an account? ",
+    "SIGN_UP": "Sign Up",
+    "OR_CONTINUE": "Or continue with",
+    "WELCOME_BACK": "Welcome Back!"
+  },
+  "QUOTES": [
+    "Life is short, the world is wide.",
+    "Everyone dies but not everyone lives.",
+    "Collect moments, not things.",
+    "Travel is the only thing you buy that makes you richer.",
+    "Adventure is always worthwhile.",
+    "Not all those who wander are lost.",
+    "The journey of a thousand miles begins with a single step."
+  ],
+  "NAV": {
+    "HOME": "Home",
+    "EXPLORE": "Explore",
+    "PROJECTS": "Projects"
+  },
+  "HOME": {
+    "TITLE": "Travel & Create",
+    "SUBTITLE": "Explore the world and design your own magazine.",
+    "EXPLORE_GLOBE": "Explore Globe",
+    "MAGAZINE_PROJECTS": "E-Magazine Projects"
+  }
+}
