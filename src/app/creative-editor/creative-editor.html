@@ -1,0 +1,525 @@
+<div class="layout-container">
+  <!-- 1. Global Sidebar -->
+  <aside class="global-sidebar">
+
+    <div class="nav-item" [class.active]="activeTool === 'settings'" (click)="setActiveTool('settings')">
+      <i class="pi pi-cog"></i>
+      <span>Settings</span>
+    </div>
+    <div class="nav-item" [class.active]="activeTool === 'templates'" (click)="setActiveTool('templates')">
+      <i class="pi pi-clone"></i>
+      <span>Templates</span>
+    </div>
+    <div class="nav-item" [class.active]="activeTool === 'text'" (click)="setActiveTool('text')">
+      <i class="pi pi-language"></i>
+      <span>Text</span>
+    </div>
+    <div class="nav-item" [class.active]="activeTool === 'photos'" (click)="setActiveTool('photos')">
+      <i class="pi pi-image"></i>
+      <span>Photos</span>
+    </div>
+    <div class="nav-item" [class.active]="activeTool === 'draw'" (click)="setActiveTool('draw')">
+      <i class="pi pi-pencil"></i>
+      <span>Draw</span>
+    </div>
+    <div class="nav-item" [class.active]="activeTool === 'icons'" (click)="setActiveTool('icons')">
+      <i class="pi pi-star"></i>
+      <span>Icons</span>
+    </div>
+    <div class="nav-item" [class.active]="activeTool === 'shapes'" (click)="setActiveTool('shapes')">
+      <i class="pi pi-stop"></i>
+      <span>Shapes</span>
+    </div>
+    <div class="nav-item" [class.active]="activeTool === 'layers'" (click)="setActiveTool('layers')">
+      <i class="pi pi-server"></i>
+      <span>Layers</span>
+    </div>
+  </aside>
+
+  <!-- 2. Contextual Drawer -->
+  <aside class="contextual-drawer" [class.closed]="!activeTool">
+    <div class="drawer-header" *ngIf="activeTool">
+      <h2>
+        <ng-container [ngSwitch]="activeTool">
+          <span *ngSwitchCase="'settings'">Document Settings</span>
+          <span *ngSwitchCase="'templates'">Templates</span>
+          <span *ngSwitchCase="'text'">Text</span>
+          <span *ngSwitchCase="'photos'">Photos</span>
+          <span *ngSwitchCase="'draw'">Drawing Tools</span>
+          <span *ngSwitchCase="'icons'">Icons</span>
+          <span *ngSwitchCase="'shapes'">Shapes</span>
+          <span *ngSwitchCase="'layers'">Layers</span>
+        </ng-container>
+      </h2>
+    </div>
+
+    <div class="drawer-content" *ngIf="activeTool">
+      <!-- Feature 1: Document Settings -->
+      <div *ngIf="activeTool === 'settings'" class="flex flex-column gap-3">
+        <div class="form-group">
+          <label>Document Name</label>
+          <input type="text" [(ngModel)]="documentName">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Width</label>
+            <input type="number" [(ngModel)]="docWidth" (change)="updateCanvasSize()">
+          </div>
+          <div class="form-group">
+            <label>Height</label>
+            <input type="number" [(ngModel)]="docHeight" (change)="updateCanvasSize()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Unit</label>
+          <select [(ngModel)]="docUnit">
+            <option value="px">Pixels (px)</option>
+            <option value="cm">Centimeters (cm)</option>
+            <option value="in">Inches (in)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Presets</label>
+          <select (change)="applyPreset($event)">
+            <option value="">Custom</option>
+            <option value="a4v">A4 Vertical</option>
+            <option value="a4h">A4 Horizontal</option>
+            <option value="insta">Instagram Square</option>
+          </select>
+        </div>
+
+        <div class="form-group mt-3">
+          <label>Canvas Background</label>
+          <input type="color" class="w-full p-0 border-none" style="height: 38px;" [(ngModel)]="canvasBgColor"
+            (change)="updateCanvasBg()">
+        </div>
+      </div>
+
+      <!-- Feature 2: Templates (Placeholder) -->
+      <div *ngIf="activeTool === 'templates'" class="flex flex-column gap-3">
+        <div class="form-group">
+          <div class="p-input-icon-left w-full">
+            <i class="pi pi-search"
+              style="left: 0.75rem; color: #94a3b8; position: absolute; top: 50%; transform: translateY(-50%);"></i>
+            <input type="text" placeholder="Search templates..." style="padding-left: 2.5rem; width: 100%;">
+          </div>
+        </div>
+        <div class="form-group">
+          <select>
+            <option>All Orientations</option>
+            <option>Vertical</option>
+            <option>Horizontal</option>
+            <option>Square</option>
+            <option>Same Size (Canvas)</option>
+          </select>
+        </div>
+        <div class="grid-2 mt-3">
+          <div class="border-round flex align-items-center justify-content-center cursor-pointer shadow-1"
+            style="height: 120px; background: linear-gradient(135deg, #fda085 0%, #f6d365 100%); color: white; font-weight: bold;"
+            (click)="applyTemplate('vertical')">Vertical</div>
+          <div class="border-round flex align-items-center justify-content-center cursor-pointer shadow-1"
+            style="height: 120px; background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); color: white; font-weight: bold;"
+            (click)="applyTemplate('horizontal')">Horizontal</div>
+          <div class="border-round flex align-items-center justify-content-center cursor-pointer shadow-1"
+            style="height: 120px; background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: white; font-weight: bold; grid-column: span 2;"
+            (click)="applyTemplate('square')">Square</div>
+        </div>
+      </div>
+
+      <!-- Feature 3: Text -->
+      <div *ngIf="activeTool === 'text'" class="flex flex-column gap-3">
+        <button class="action-btn primary justify-content-center w-full py-3 mb-2 shadow-2" (click)="addText()">
+          <i class="pi pi-plus"></i> Add Heading
+        </button>
+
+        <div class="text-sm font-bold text-500 mb-1 border-bottom-1 border-200 pb-1">Text Styles</div>
+        <div class="flex flex-column gap-2 overflow-y-auto max-h-20rem p-1">
+          <div class="p-3 border-round border-1 border-300 cursor-pointer bg-gray-50 hover:bg-teal-50 hover:border-teal-300 transition-all shadow-sm"
+            (click)="addText('Retro Pixel Style', 'VT323')">
+            <span style="font-family: 'VT323'; font-size: 24px;" class="block">Retro Pixel Style</span>
+          </div>
+          <div class="p-3 border-round border-1 border-300 cursor-pointer bg-gray-50 hover:bg-teal-50 hover:border-teal-300 transition-all shadow-sm"
+            (click)="addText('Elegant Script', 'Pacifico')">
+            <span style="font-family: 'Pacifico'; font-size: 20px;" class="block">Elegant Script</span>
+          </div>
+          <div class="p-3 border-round border-1 border-300 cursor-pointer bg-gray-50 hover:bg-teal-50 hover:border-teal-300 transition-all shadow-sm"
+            (click)="addText('Modern Lato', 'Lato')">
+            <span style="font-family: 'Lato'; font-size: 18px;" class="block font-bold">Modern Lato Bold</span>
+          </div>
+        </div>
+
+        <div style="height: 1px; background: #e2e8f0; margin: 8px 0;"></div>
+
+        <button class="action-btn w-full py-2 shadow-1 transition-all" 
+          [ngClass]="isTextOnPathMode ? 'primary' : 'secondary'" (click)="addCurvedText()">
+          <i class="pi" [ngClass]="isTextOnPathMode ? 'pi-times' : 'pi-share-alt'"></i> 
+          {{ isTextOnPathMode ? 'Cancel Drawing' : 'Draw Text on Path' }}
+        </button>
+
+        <div *ngIf="isTextOnPathMode" class="p-3 border-round bg-teal-50 border-1 border-teal-200 mt-2 fadein animation-duration-200">
+           <div class="text-xs font-bold text-teal-700 mb-1">Text-on-Path Mode Active</div>
+           <div class="text-xs text-teal-600">
+             1. Draw a line/curve on the canvas.<br>
+             2. Text will automatically follow your line.<br>
+             3. You can edit the text afterwards.
+           </div>
+        </div>
+      </div>
+
+      <!-- Feature 4: Photos -->
+      <div *ngIf="activeTool === 'photos'" class="flex flex-column gap-4">
+        <!-- Upload Card -->
+        <div class="p-4 border-round-xl border-dashed border-2 border-300 bg-gray-50 flex flex-column align-items-center justify-content-center gap-2 cursor-pointer hover:border-primary hover:bg-teal-50 transition-all relative">
+          <i class="pi pi-cloud-upload text-5xl text-primary"></i>
+          <span class="font-bold text-sm">Upload from Device</span>
+          <span class="text-xs text-500 text-center">Click or drag & drop image here</span>
+          <input type="file" (change)="onDeviceUpload($event)" accept="image/*" class="absolute w-full h-full opacity-0 cursor-pointer">
+        </div>
+
+        <div class="flex align-items-center gap-2">
+          <div class="flex-grow-1 h-px bg-300"></div>
+          <span class="text-xs text-400 font-bold">OR URL</span>
+          <div class="flex-grow-1 h-px bg-300"></div>
+        </div>
+
+        <!-- URL Input -->
+        <div class="flex flex-column gap-2">
+          <div class="flex gap-2">
+            <input type="text" [(ngModel)]="imageUrlInput" placeholder="Paste image URL here..." 
+              class="flex-grow-1 p-3 border-round-lg border-1 border-300 text-sm focus:border-primary focus:shadow-none outline-none bg-white">
+            <button class="action-btn primary p-3 shadow-1" (click)="addPhotoFromUrl()" style="min-width: 60px;">
+              <i class="pi pi-plus text-2xl"></i>
+            </button>
+          </div>
+          <p class="text-xs text-500 italic px-1">Tip: Use direct image links (ending in .jpg, .png)</p>
+        </div>
+      </div>
+
+      <!-- Feature 5: Icons -->
+      <div *ngIf="activeTool === 'icons'" class="flex flex-column gap-3">
+        <div class="form-group">
+          <div class="p-input-icon-left w-full relative">
+            <i class="pi pi-search"
+              style="left: 0.75rem; color: #94a3b8; position: absolute; top: 50%; transform: translateY(-50%);"></i>
+            <input type="text" placeholder="Search icons..." style="padding-left: 2.5rem; width: 100%;">
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-2">
+          <!-- Mocking icons via FontAwesome/PrimeIcons strings for demonstration -->
+          <div class="icon-btn border-1 border-300 cursor-pointer flex justify-content-center align-items-center"
+            style="width: 48px; height: 48px;" (click)="addTextIcon('★')"><i class="pi pi-star text-5xl"></i></div>
+          <div class="icon-btn border-1 border-300 cursor-pointer flex justify-content-center align-items-center"
+            style="width: 48px; height: 48px;" (click)="addTextIcon('♥')"><i class="pi pi-heart text-5xl"></i></div>
+          <div class="icon-btn border-1 border-300 cursor-pointer flex justify-content-center align-items-center"
+            style="width: 48px; height: 48px;" (click)="addTextIcon('✈')"><i class="pi pi-send text-5xl"></i></div>
+          <div class="icon-btn border-1 border-300 cursor-pointer flex justify-content-center align-items-center"
+            style="width: 48px; height: 48px;" (click)="addTextIcon('♫')"><i class="pi pi-globe text-5xl"></i></div>
+        </div>
+      </div>
+
+      <!-- Feature 6: Shapes -->
+      <div *ngIf="activeTool === 'shapes'" class="flex flex-column gap-3">
+        <div class="flex flex-wrap gap-2 mb-3">
+          <div class="icon-btn border-1 border-300 cursor-pointer flex justify-content-center align-items-center"
+            style="width: 48px; height: 48px;" (click)="addShape('rect')"><i class="pi pi-stop text-4xl"></i></div>
+          <div class="icon-btn border-1 border-300 cursor-pointer flex justify-content-center align-items-center"
+            style="width: 48px; height: 48px;" (click)="addShape('circle')"><i class="pi pi-circle text-4xl"></i></div>
+          <div class="icon-btn border-1 border-300 cursor-pointer flex justify-content-center align-items-center"
+            style="width: 48px; height: 48px;" (click)="addShape('triangle')"><i class="pi pi-caret-up text-4xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 8: Draw -->
+      <div *ngIf="activeTool === 'draw'" class="flex flex-column gap-4">
+        <!-- Free Draw Tool Card -->
+        <div class="draw-tool-card p-3 border-round-xl cursor-pointer transition-all duration-200"
+          [ngClass]="isDrawingMode ? 'bg-teal-50 border-teal-500 border-2 shadow-2' : 'bg-gray-50 border-300 border-1'"
+          (click)="!isDrawingMode ? toggleDrawingMode() : null">
+          <div class="flex align-items-center justify-content-between mb-2">
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-pencil text-xl text-teal-600"></i>
+              <span class="font-bold">Free Draw</span>
+            </div>
+            <button *ngIf="isDrawingMode" class="action-btn primary py-1 px-3 text-xs"
+              (click)="toggleDrawingMode(); $event.stopPropagation()">STOP</button>
+          </div>
+          <p class="text-xs text-500 mb-3">Draw anything freely with various brush sizes.</p>
+
+          <!-- Visual Example (Curved Line) -->
+          <div class="flex justify-content-center py-2 bg-white border-round mb-3 opacity-60">
+            <svg width="60" height="30" viewBox="0 0 60 30" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 25 C 15 5, 45 5, 55 25" stroke-linecap="round" />
+            </svg>
+          </div>
+
+          <div *ngIf="isDrawingMode" class="flex flex-column gap-3 mt-2 pt-2 border-top-1 border-teal-200"
+            (click)="$event.stopPropagation()">
+            <div class="form-group">
+              <label class="text-xs font-bold mb-1 block">Thickness: {{ drawingProps.width }}px</label>
+              <input type="range" min="1" max="50" [(ngModel)]="drawingProps.width" (ngModelChange)="updateBrush()"
+                class="w-full">
+            </div>
+            <div class="form-group">
+              <label class="text-xs font-bold mb-1 block">Brush Color</label>
+              <input type="color" [(ngModel)]="drawingProps.color" (ngModelChange)="updateBrush()"
+                class="w-full p-0 border-none" style="height: 32px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Polygon Tool Card -->
+        <div class="draw-tool-card p-3 border-round-xl cursor-pointer transition-all duration-200"
+          [ngClass]="isPolygonMode ? 'bg-indigo-50 border-indigo-500 border-2 shadow-2' : 'bg-gray-50 border-300 border-1'"
+          (click)="!isPolygonMode ? togglePolygonMode() : null">
+          <div class="flex align-items-center justify-content-between mb-2">
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-share-alt text-xl text-indigo-600"></i>
+              <span class="font-bold">Polygon / Pen Tool</span>
+            </div>
+            <button *ngIf="isPolygonMode" class="action-btn secondary py-1 px-3 text-xs"
+              (click)="togglePolygonMode(); $event.stopPropagation()">CANCEL</button>
+          </div>
+          <p class="text-xs text-500 mb-3">Create custom shapes by clicking points.</p>
+
+          <!-- Visual Example (Polygon) -->
+          <div class="flex justify-content-center py-2 bg-white border-round mb-3 opacity-60">
+            <svg width="40" height="30" viewBox="0 0 40 30" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 25 L 20 5 L 35 25 Z" />
+            </svg>
+          </div>
+
+          <div *ngIf="isPolygonMode" class="flex flex-column gap-2 mt-2 pt-2 border-top-1 border-indigo-200"
+            (click)="$event.stopPropagation()">
+            <div class="text-xs text-indigo-700 italic mb-2">
+              • Click points on canvas<br>
+              • Double click or button to finish
+            </div>
+            <button class="action-btn primary w-full py-2 text-xs font-bold shadow-1" (click)="finishPolygon(false)"
+              *ngIf="polygonPoints.length >= 2">
+              FINISH DRAWING
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 7: Layers -->
+      <div *ngIf="activeTool === 'layers'" class="flex flex-column gap-3">
+        <div class="text-sm text-500 mb-2">Layer Order</div>
+
+        <div *ngIf="canvasLayers.length === 0" class="text-sm text-400 text-center py-4">No layers found</div>
+
+        <div *ngFor="let layer of canvasLayers; let i = index"
+          class="flex align-items-center justify-content-between p-2 border-round mb-2 cursor-pointer transition-all duration-200"
+          [ngClass]="{
+               'bg-indigo-100 border-indigo-500 border-2 shadow-2': layer.obj === activeObject,
+               'border-300 border-1 bg-gray-50': layer.obj !== activeObject,
+               'opacity-50': draggedLayerIndex === i,
+               'border-top-3 border-primary pt-3': dragOverLayerIndex === i && draggedLayerIndex !== null && i < draggedLayerIndex,
+               'border-bottom-3 border-primary pb-3': dragOverLayerIndex === i && draggedLayerIndex !== null && i > draggedLayerIndex
+             }" draggable="true" (dragstart)="onDragStart($event, i)" (dragover)="onDragOver($event, i)"
+          (drop)="onDrop($event, i)" (dragend)="onDragEnd($event)" (click)="selectLayer(layer)">
+
+          <span class="text-sm font-medium text-overflow-ellipsis overflow-hidden white-space-nowrap"
+            style="max-width: 120px;">
+            <i class="pi mr-2 text-500" [ngClass]="getLayerIcon(layer.type)"></i>
+            {{ layer.type }}
+          </span>
+
+          <div class="flex gap-1 align-items-center">
+            <button class="icon-btn" style="width: 24px; height: 24px;" title="Bring Forward"
+              (click)="moveLayerUp(layer); $event.stopPropagation()">
+              <i class="pi pi-angle-up text-xs"></i>
+            </button>
+            <button class="icon-btn" style="width: 24px; height: 24px;" title="Send Backward"
+              (click)="moveLayerDown(layer); $event.stopPropagation()">
+              <i class="pi pi-angle-down text-xs"></i>
+            </button>
+            <button class="icon-btn" style="width: 24px; height: 24px;"
+              (click)="toggleLayerLock(layer); $event.stopPropagation()">
+              <i class="pi text-xs" [ngClass]="layer.locked ? 'pi-lock' : 'pi-lock-open'"></i>
+            </button>
+            <button class="icon-btn" style="width: 24px; height: 24px;"
+              (click)="toggleLayerVisibility(layer); $event.stopPropagation()">
+              <i class="pi text-xs" [ngClass]="layer.visible ? 'pi-eye' : 'pi-eye-slash'"></i>
+            </button>
+            <button class="icon-btn text-red-500" style="width: 24px; height: 24px;"
+              (click)="deleteLayer(layer); $event.stopPropagation()">
+              <i class="pi pi-trash text-xs"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- 3. Workspace Area -->
+  <main class="workspace-container">
+    <header class="top-bar text-white">
+      <div class="left-actions">
+        <input type="text" class="doc-title" [(ngModel)]="documentName">
+        <div class="flex align-items-center gap-1 bg-gray-100 border-round px-2 py-1 ml-4">
+          <button class="icon-btn text-white" style="width: 28px; height: 28px;" title="Zoom Out"
+            (click)="zoomCanvas(0.9)"><i class="pi pi-minus text-xs"></i></button>
+          <span class="text-xs font-semibold px-2">{{ currentZoom | percent }}</span>
+          <button class="icon-btn text-white" style="width: 28px; height: 28px;" title="Zoom In"
+            (click)="zoomCanvas(1.1)"><i class="pi pi-plus text-xs"></i></button>
+        </div>
+      </div>
+      <div class="right-actions">
+        <button class="action-btn secondary" (click)="addNewPage()" title="Add New Page">
+          <i class="pi pi-file-plus"></i>
+        </button>
+        <div class="flex gap-1 ml-2 align-items-center">
+          <span class="text-sm font-semibold mt-1">Page {{ currentPageIndex + 1 }} / {{ pages.length }}</span>
+          <button class="icon-btn text-white" [disabled]="currentPageIndex === 0"
+            (click)="switchPage(currentPageIndex - 1)"><i class="pi pi-chevron-left"></i></button>
+          <button class="icon-btn text-white" [disabled]="currentPageIndex === pages.length - 1"
+            (click)="switchPage(currentPageIndex + 1)"><i class="pi pi-chevron-right"></i></button>
+        </div>
+
+        <div style="width: 1px; height: 24px; background-color: #cbd5e1;" class="mx-1"></div>
+        <button class="icon-btn text-white" (click)="help()" title="Help"><i class="pi pi-question-circle"></i></button>
+        <button class="action-btn secondary" (click)="preview()"><i class="pi pi-eye"></i> Preview</button>
+        <button class="action-btn primary" (click)="download()"><i class="pi pi-download"></i> Download</button>
+        <div
+          class="ml-2 w-2rem h-2rem border-circle bg-primary text-white flex align-items-center justify-content-center font-bold text-sm cursor-pointer shadow-1">
+          YA
+        </div>
+      </div>
+    </header>
+
+    <div class="canvas-area" #canvasContainer>
+      <div class="canvas-wrapper" [style.width.px]="docWidth * currentZoom" [style.height.px]="docHeight * currentZoom"
+        style="position: relative;">
+        <!-- Floating Toolbar -->
+        <div class="floating-toolbar shadow-2" *ngIf="showFloatingToolbar" [ngStyle]="floatingToolbarStyle">
+          <!-- Contextual: Text properties -->
+          <ng-container *ngIf="activeObjectType === 'i-text' || activeObjectType === 'text'">
+            <select [(ngModel)]="textProps.fontFamily" (ngModelChange)="updateTextProp('fontFamily', $event)"
+              class="prop-select">
+              <option value="Inter">Inter</option>
+              <option value="Outfit">Outfit</option>
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times New Roman</option>
+            </select>
+            <input type="number" [(ngModel)]="textProps.fontSize" (ngModelChange)="updateTextProp('fontSize', $event)"
+              class="prop-input" style="width: 60px;">
+            <input type="color" [(ngModel)]="textProps.fill" (ngModelChange)="updateTextProp('fill', $event)"
+              class="prop-color">
+
+            <div class="flex gap-1 border-left-1 border-300 pl-2 ml-1">
+              <button class="icon-btn-small" [class.active]="textProps.fontWeight === 'bold'"
+                (click)="toggleTextProp('fontWeight', 'bold', 'normal')"><span
+                  class="font-bold text-sm">B</span></button>
+              <button class="icon-btn-small" [class.active]="textProps.fontStyle === 'italic'"
+                (click)="toggleTextProp('fontStyle', 'italic', 'normal')"><span
+                  class="font-italic text-sm">I</span></button>
+              <button class="icon-btn-small" [class.active]="textProps.underline"
+                (click)="toggleTextProp('underline', true, false)"><span class="underline text-sm"
+                  style="text-decoration: underline;">U</span></button>
+            </div>
+            <div class="flex gap-1 border-left-1 border-300 pl-2 ml-1">
+              <button class="icon-btn-small" [class.active]="textProps.textAlign === 'left'"
+                (click)="updateTextProp('textAlign', 'left')"><i class="pi pi-align-left text-sm"></i></button>
+              <button class="icon-btn-small" [class.active]="textProps.textAlign === 'center'"
+                (click)="updateTextProp('textAlign', 'center')"><i class="pi pi-align-center text-sm"></i></button>
+              <button class="icon-btn-small" [class.active]="textProps.textAlign === 'right'"
+                (click)="updateTextProp('textAlign', 'right')"><i class="pi pi-align-right text-sm"></i></button>
+            </div>
+          </ng-container>
+
+          <!-- Contextual: Shape properties -->
+          <ng-container
+            *ngIf="activeObjectType === 'rect' || activeObjectType === 'circle' || activeObjectType === 'triangle' || activeObjectType === 'polygon' || activeObjectType === 'polyline' || activeObjectType === 'path'">
+            <div class="flex align-items-center gap-2">
+              <input type="color" [(ngModel)]="shapeProps.fill" (ngModelChange)="updateShapeProp('fill', $event)"
+                class="prop-color" title="Fill Color">
+              <button class="action-btn-small" (click)="updateShapeProp('fill', 'transparent')">None</button>
+            </div>
+            <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2 ml-1">
+              <input type="color" [(ngModel)]="shapeProps.stroke" (ngModelChange)="updateShapeProp('stroke', $event)"
+                class="prop-color" title="Border Color">
+              <input type="number" [(ngModel)]="shapeProps.strokeWidth"
+                (ngModelChange)="updateShapeProp('strokeWidth', $event)" class="prop-input" style="width: 50px;"
+                title="Border Width">
+            </div>
+            <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2 ml-1"
+              *ngIf="activeObjectType === 'rect'">
+              <span class="text-xs text-500 font-semibold">Radius:</span>
+              <input type="number" [(ngModel)]="shapeProps.rx"
+                (ngModelChange)="updateShapeProp('rx', $event); updateShapeProp('ry', $event)" class="prop-input"
+                style="width: 50px;">
+            </div>
+          </ng-container>
+
+          <!-- Contextual: Image properties -->
+          <ng-container *ngIf="activeObjectType === 'image'">
+            <!-- Border Radius -->
+            <div class="flex align-items-center gap-1 mr-2">
+              <i class="pi pi-stop border-round-sm text-xs"></i>
+              <input type="number" [(ngModel)]="imageProps.borderRadius" (ngModelChange)="updateImageProp('borderRadius', $event)"
+                class="prop-input" style="width: 45px;" title="Corner Radius">
+            </div>
+
+            <!-- Border Color & Width -->
+            <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2">
+              <input type="color" [(ngModel)]="imageProps.stroke" (ngModelChange)="updateImageProp('stroke', $event)"
+                class="prop-color" title="Border Color">
+              <input type="number" [(ngModel)]="imageProps.strokeWidth" (ngModelChange)="updateImageProp('strokeWidth', $event)"
+                class="prop-input" style="width: 45px;" title="Border Width">
+            </div>
+
+            <!-- Masks -->
+            <div class="flex gap-1 border-left-1 border-300 pl-2">
+               <button class="icon-btn-small" (click)="applyImageMask('none')" title="Square"><i class="pi pi-stop"></i></button>
+               <button class="icon-btn-small" (click)="applyImageMask('circle')" title="Circle"><i class="pi pi-circle"></i></button>
+               <button class="icon-btn-small" (click)="applyImageMask('star')" title="Star"><i class="pi pi-star"></i></button>
+               <button class="icon-btn-small" (click)="applyImageMask('triangle')" title="Triangle"><i class="pi pi-caret-up"></i></button>
+            </div>
+
+            <!-- Frames -->
+            <div class="flex gap-1 border-left-1 border-300 pl-2 mr-1">
+               <button class="action-btn-small" [class.active]="imageProps.frame === 'modern'" (click)="applyImageFrame('modern')">Modern</button>
+               <button class="action-btn-small" [class.active]="imageProps.frame === 'classic'" (click)="applyImageFrame('classic')">Classic</button>
+               <button class="action-btn-small" [class.active]="imageProps.frame === 'white'" (click)="applyImageFrame('white')">Polaroid</button>
+            </div>
+
+            <!-- Pan (Image in Mask) -->
+            <div class="flex align-items-center gap-1 border-left-1 border-300 pl-2" *ngIf="imageProps.borderRadius > 0 || activeObject?.clipPath">
+               <span class="text-xs text-500 font-bold mr-1">Pan:</span>
+               <div class="grid-pan">
+                  <button class="pan-btn" (click)="panImageMask('up'); $event.stopPropagation()"><i class="pi pi-chevron-up"></i></button>
+                  <button class="pan-btn" (click)="panImageMask('left'); $event.stopPropagation()"><i class="pi pi-chevron-left"></i></button>
+                  <button class="pan-btn" (click)="panImageMask('right'); $event.stopPropagation()"><i class="pi pi-chevron-right"></i></button>
+                  <button class="pan-btn" (click)="panImageMask('down'); $event.stopPropagation()"><i class="pi pi-chevron-down"></i></button>
+               </div>
+            </div>
+          </ng-container>
+
+          <!-- Common: Opacity and Shadow -->
+          <div style="width: 1px; height: 20px; background-color: #cbd5e1;" class="mx-2"></div>
+          <div class="flex align-items-center gap-2">
+            <span class="text-xs text-500 font-semibold" title="Opacity">Op:</span>
+            <input type="range" min="0" max="1" step="0.05" [(ngModel)]="commonProps.opacity"
+              (ngModelChange)="updateCommonProp('opacity', $event)" style="width: 60px;">
+          </div>
+          <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2 ml-1">
+            <label class="flex align-items-center gap-1 cursor-pointer m-0">
+              <input type="checkbox" [(ngModel)]="commonProps.hasShadow" (ngModelChange)="toggleShadow($event)">
+              <span class="text-xs text-500 font-semibold">Shadow</span>
+            </label>
+          </div>
+
+          <div style="width: 1px; height: 20px; background-color: #cbd5e1;" class="mx-2"></div>
+          <button class="icon-btn-small text-red-500 hover:bg-red-50" (click)="deleteSelected()" title="Delete (Del)">
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+
+        <canvas #fabricCanvas id="editor-canvas"></canvas>
+      </div>
+    </div>
+  </main>
+</div>

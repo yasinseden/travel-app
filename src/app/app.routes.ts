@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { AppHome } from './home/home';
-import { CanvasEditor } from './canvas-editor/canvas-editor';
+import { CreativeEditor } from './creative-editor/creative-editor';
 import { MagazineViewer } from './magazine-viewer/magazine-viewer';
 import { MagazineList } from './magazine-list/magazine-list';
 import { Login } from './login/login';
@@ -10,8 +10,8 @@ export const routes: Routes = [
   { path: '', component: AppHome },
   { path: 'magazines', component: MagazineList },
 
-  { path: 'edit', component: CanvasEditor },
-  { path: 'edit/:id', component: CanvasEditor },
+  { path: 'edit', component: CreativeEditor },
+  { path: 'edit/:id', component: CreativeEditor },
   { path: 'view/:id', component: MagazineViewer },
   { path: 'globe', loadComponent: () => import('./interactive-globe/interactive-globe.component').then(m => m.InteractiveGlobeComponent) },
   { path: 'country/:name', loadComponent: () => import('./country-detail/country-detail.component').then(m => m.CountryDetailComponent) },
