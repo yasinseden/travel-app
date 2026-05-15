@@ -88,7 +88,7 @@ export class MagazineViewer implements OnInit {
   currentPageIndex = 0;
   isTurning = false;
 
-  constructor(private route: ActivatedRoute, private router: Router) {}
+  constructor(private route: ActivatedRoute, private router: Router) { }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');

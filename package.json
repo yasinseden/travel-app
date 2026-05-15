@@ -25,6 +25,8 @@
     "fabric": "^7.3.1",
     "flag-icons": "^7.5.0",
     "globe.gl": "^2.45.3",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.1",
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
     "primeng": "^21.1.6",

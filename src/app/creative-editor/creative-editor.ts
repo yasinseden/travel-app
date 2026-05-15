@@ -39,7 +39,6 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   private panListeners: (() => void)[] = [];
 
   showFloatingToolbar = false;
-  floatingToolbarStyle: any = { top: '0px', left: '0px' };
 
   textProps = { fontFamily: 'Inter', fontSize: 40, fill: '#000000', fontWeight: 'normal', fontStyle: 'normal', underline: false, textAlign: 'left' };
   shapeProps: any = { fill: '#14b8a6', stroke: '#000000', strokeWidth: 0, rx: 0, ry: 0 };
@@ -344,12 +343,6 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       this.showFloatingToolbar = false;
       return;
     }
-    const coords = active.getBoundingRect();
-
-    this.floatingToolbarStyle = {
-      top: (coords.top + coords.height + 20) + 'px',
-      left: (coords.left + coords.width / 2) + 'px'
-    };
     this.showFloatingToolbar = true;
   }
 
@@ -1078,6 +1071,24 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  saveDocument() {
+    this.savePageState(); // Ensure current page is saved to this.pages array
+
+    const documentData = {
+      name: this.documentName,
+      width: this.docWidth,
+      height: this.docHeight,
+      unit: this.docUnit,
+      backgroundColor: this.canvasBgColor,
+      pages: this.pages, // This contains the Fabric JSON strings
+      exportedAt: new Date().toISOString()
+    };
+
+    console.log('--- SAVING DOCUMENT DATA ---');
+    console.log(documentData);
+    alert('Document data has been logged to the console.');
   }
 
   help() {

@@ -1,4 +1,3 @@
-
 :host {
   display: block;
   width: 100%;
@@ -176,6 +175,35 @@
     }
   }
 
+  .action-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &.primary {
+      background: var(--primary);
+      color: white;
+
+      &:hover {
+        background: var(--primary-dark);
+      }
+    }
+
+    &.secondary {
+      background: #f1f5f9;
+      color: var(--text-main);
+
+      &:hover {
+        background: #e2e8f0;
+      }
+    }
+  }
+
   .right-actions {
     display: flex;
     align-items: center;
@@ -195,35 +223,6 @@
         color: black !important;
       }
     }
-
-    .action-btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      &.primary {
-        background: var(--primary);
-        color: white;
-
-        &:hover {
-          background: var(--primary-dark);
-        }
-      }
-
-      &.secondary {
-        background: #f1f5f9;
-        color: var(--text-main);
-
-        &:hover {
-          background: #e2e8f0;
-        }
-      }
-    }
   }
 }
 
@@ -234,6 +233,7 @@
   overflow: auto;
   padding: 40px;
   position: relative;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
 
   /* Checkerboard background for transparent canvas indication */
   background-image:
@@ -293,20 +293,44 @@
   gap: 12px;
 }
 
-/* Floating Toolbar */
-.floating-toolbar {
-  position: absolute;
+/* Contextual Toolbar (Full Width) */
+.contextual-toolbar {
+  width: 100%;
+  height: 60px;
   background: white;
-  border-radius: 8px;
-  padding: 8px 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  z-index: 50;
-  transform: translateX(-50%);
-  pointer-events: auto;
-  border: 1px solid #e2e8f0;
-  min-height: 44px;
+  padding: 0 24px;
+  z-index: 100;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  .toolbar-content-wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .toolbar-placeholder-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    /* Very light slate */
+    color: #94a3b8;
+    /* Slate 400 */
+    font-size: 0.875rem;
+    font-weight: 500;
+
+    .placeholder-item {
+      display: flex;
+      align-items: center;
+      opacity: 0.7;
+    }
+  }
 }
 
 .prop-select {
@@ -396,12 +420,12 @@
 
 .grid-pan {
   display: grid;
-  grid-template-areas: 
+  grid-template-areas:
     ". up ."
     "left . right"
     ". down .";
   gap: 2px;
-  
+
   .pan-btn {
     width: 18px;
     height: 18px;
@@ -416,20 +440,31 @@
     font-size: 8px;
     color: #475569;
     transition: all 0.1s ease;
-    
+
     &:hover {
       background: #e2e8f0;
       color: var(--primary-color);
     }
-    
+
     &:active {
       background: #cbd5e1;
       transform: scale(0.9);
     }
-    
-    &:nth-child(1) { grid-area: up; }
-    &:nth-child(2) { grid-area: left; }
-    &:nth-child(3) { grid-area: right; }
-    &:nth-child(4) { grid-area: down; }
+
+    &:nth-child(1) {
+      grid-area: up;
+    }
+
+    &:nth-child(2) {
+      grid-area: left;
+    }
+
+    &:nth-child(3) {
+      grid-area: right;
+    }
+
+    &:nth-child(4) {
+      grid-area: down;
+    }
   }
 }
