@@ -1,10 +1,12 @@
-import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import * as fabric from 'fabric';
+import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
 
-type ActiveTool = 'settings' | 'templates' | 'text' | 'photos' | 'draw' | 'icons' | 'shapes' | 'layers' | null;
+type ActiveTool = 'settings' | 'templates' | 'text' | 'photos' | 'videos' | 'draw' | 'icons' | 'shapes' | 'layers' | null;
 
 @Component({
   selector: 'app-creative-editor',
@@ -31,6 +33,7 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   currentPageIndex = 0;
 
   activeObjectType: string | null = null;
+  activeObjectName: string | null = null;
   selectedObjectId: string | null = null;
   activeObject: any = null;
 
@@ -39,13 +42,19 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   private panListeners: (() => void)[] = [];
 
   showFloatingToolbar = false;
+  showDownloadMenu = false;
+  activePopover: 'transform' | 'shadow' | 'mask' | 'frame' | 'shape' | null = null;
 
   textProps = { fontFamily: 'Inter', fontSize: 40, fill: '#000000', fontWeight: 'normal', fontStyle: 'normal', underline: false, textAlign: 'left' };
   shapeProps: any = { fill: '#14b8a6', stroke: '#000000', strokeWidth: 0, rx: 0, ry: 0 };
-  imageProps = { borderRadius: 0, stroke: '#000000', strokeWidth: 0, shadow: false, frame: 'none', maskOffsetX: 0, maskOffsetY: 0, maskScale: 1 };
+  imageProps = { borderRadius: 0, stroke: '#000000', strokeWidth: 0, shadow: false, frame: 'none', maskOffsetX: 0, maskOffsetY: 0, maskScale: 1, maskType: 'none' };
   commonProps = { opacity: 1, hasShadow: false };
+  shadowProps = { color: 'rgba(0,0,0,0.3)', blur: 10, offsetX: 5, offsetY: 5, type: 'drop' }; // 'drop', 'glow', 'inner'
+  transformProps = { widthPercent: 0, heightPercent: 0, widthPx: 0, heightPx: 0, angle: 0, usePx: true, lockAspect: true };
 
   imageUrlInput = '';
+  videoUrlInput = '';
+  private videoRenderLoopRunning = false;
   canvasLayers: any[] = [];
   isDrawingMode = false;
   isTextOnPathMode = false;
@@ -54,13 +63,15 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     color: '#14b8a6'
   };
 
+  elementCounters: { [key: string]: number } = {};
+
   isPolygonMode = false;
   polygonPoints: { x: number, y: number }[] = [];
   tempLines: fabric.Line[] = [];
   activeLine: fabric.Line | null = null;
   tempPointMarkers: fabric.Circle[] = [];
 
-  constructor(private router: Router) { }
+  constructor(private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.pages.push(''); // Initial empty page
@@ -79,6 +90,7 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.videoRenderLoopRunning = false;
     if (this.canvas) {
       this.canvas.dispose();
     }
@@ -157,17 +169,58 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       height: this.docHeight,
       backgroundColor: this.canvasBgColor,
       preserveObjectStacking: true,
+      fireRightClick: true,
+      stopContextMenu: true
     });
 
     this.setupCanvasEvents();
     this.centerCanvas();
   }
 
+  generateObjectName(type: string): string {
+    const typeMap: { [key: string]: string } = {
+      'i-text': 'txt',
+      'text': 'txt',
+      'rect': 'shape',
+      'circle': 'shape',
+      'triangle': 'shape',
+      'polygon': 'shape',
+      'polyline': 'shape',
+      'path': 'draw',
+      'image': 'img',
+      'group': 'grp'
+    };
+    const baseType = typeMap[type] || 'obj';
+
+    if (!this.elementCounters[baseType]) {
+      this.elementCounters[baseType] = 0;
+    }
+
+    let isUnique = false;
+    let newName = '';
+    while (!isUnique) {
+      this.elementCounters[baseType]++;
+      newName = `${baseType}_${this.elementCounters[baseType]}`;
+      // Check if any existing object has this name
+      const existing = this.canvas.getObjects().find((obj: any) => obj.name === newName);
+      if (!existing) {
+        isUnique = true;
+      }
+    }
+
+    return newName;
+  }
+
   setupCanvasEvents() {
     this.canvas.on('selection:created', (e) => this.onObjectSelected(e.selected?.[0]));
     this.canvas.on('selection:updated', (e) => this.onObjectSelected(e.selected?.[0]));
     this.canvas.on('selection:cleared', () => this.onObjectCleared());
-    this.canvas.on('object:added', () => this.updateLayers());
+    this.canvas.on('object:added', (e: any) => {
+      if (e.target && !e.target.name && e.target.type !== 'activeSelection') {
+        e.target.set('name', this.generateObjectName(e.target.type));
+      }
+      this.updateLayers();
+    });
     this.canvas.on('object:removed', () => this.updateLayers());
 
     this.canvas.on('path:created', (opt: any) => {
@@ -212,15 +265,14 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
           charSpacing: dynamicSpacing,
           path: path,
           pathAlign: 'center',
-          pathStartOffset: 5,
-          name: 'text_on_path_' + this.generateId()
+          pathStartOffset: 5
         } as any);
 
         // Store path length for future recalculations
         (text as any)._pathLength = totalPathLength;
 
         this.canvas.add(text);
-        this.canvas.setActiveObject(text);
+        this.selectActiveObject(text);
 
         // Reset mode
         this.isTextOnPathMode = false;
@@ -269,9 +321,34 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.canvas.on('mouse:down', (opt: any) => {
+      // Handle right click to abort/finish tools
+      if (opt.e.button === 2) {
+        if (this.isDrawingMode) {
+          this.toggleDrawingMode();
+        }
+        if (this.isPolygonMode) {
+          if (this.polygonPoints.length > 1) {
+            this.finishPolygon(false); // Finish as open polyline
+          } else {
+            this.togglePolygonMode(); // Cancel entirely
+          }
+        }
+        return;
+      }
+
       // Only left click (0) should add points in polygon mode
       if (this.isPolygonMode && opt.e.button === 0) {
         this.addPolygonPoint(opt);
+      }
+    });
+
+    this.canvas.on('mouse:dblclick', (opt: any) => {
+      if (this.isPolygonMode) {
+        // Double click creates 2 mousedown events. Remove the second one.
+        if (this.polygonPoints.length > 1) {
+          this.polygonPoints.pop();
+        }
+        this.finishPolygon(false); // Finish as open polyline, like the UI button
       }
     });
 
@@ -284,10 +361,17 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  selectActiveObject(obj: any) {
+    this.canvas.setActiveObject(obj);
+    this.onObjectSelected(obj);
+    this.canvas.requestRenderAll();
+  }
+
   onObjectSelected(obj: any) {
     if (!obj) return;
     this.activeObject = obj;
     this.activeObjectType = obj.type || null;
+    this.activeObjectName = obj.name || obj.type || null;
     this.selectedObjectId = obj.name || null;
 
     if (this.activeObjectType === 'i-text' || this.activeObjectType === 'text') {
@@ -317,7 +401,8 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
         frame: (obj as any).frame || 'none',
         maskOffsetX: obj.clipPath ? (obj.clipPath.left || 0) : 0,
         maskOffsetY: obj.clipPath ? (obj.clipPath.top || 0) : 0,
-        maskScale: obj.clipPath ? (obj.clipPath.scaleX || 1) : 1
+        maskScale: obj.clipPath ? (obj.clipPath.scaleX || 1) : 1,
+        maskType: 'none'
       };
     }
 
@@ -326,6 +411,8 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       hasShadow: !!obj.shadow
     };
 
+    this.updateTransformPropsFromObject(obj);
+
     this.showFloatingToolbar = true;
     setTimeout(() => this.updateFloatingToolbar(), 0);
   }
@@ -333,8 +420,22 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   onObjectCleared() {
     this.activeObject = null;
     this.activeObjectType = null;
+    this.activeObjectName = null;
     this.selectedObjectId = null;
     this.showFloatingToolbar = false;
+    this.activePopover = null;
+  }
+
+  togglePopover(popoverName: 'transform' | 'shadow' | 'mask' | 'frame' | 'shape') {
+    if (this.activePopover === popoverName) {
+      this.activePopover = null;
+    } else {
+      this.activePopover = popoverName;
+    }
+  }
+
+  closePopover() {
+    this.activePopover = null;
   }
 
   updateFloatingToolbar() {
@@ -343,6 +444,7 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       this.showFloatingToolbar = false;
       return;
     }
+    this.updateTransformPropsFromObject(active);
     this.showFloatingToolbar = true;
   }
 
@@ -369,6 +471,12 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       if (activeObject && !(activeObject as any).isEditing) {
         this.deleteSelected();
       }
+    } else if (event.key === 'd' && (event.ctrlKey || event.metaKey)) {
+      if (['INPUT', 'TEXTAREA'].includes((event.target as HTMLElement).tagName)) {
+        return;
+      }
+      event.preventDefault();
+      this.duplicateSelected();
     }
   }
 
@@ -458,17 +566,19 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // --- Text ---
-  addText(customText: string = 'Your Text Here', fontFamily: string = 'Inter') {
+  addText(customText: string = 'Your Text Here', fontFamily: string = 'Inter', fontSize: number = 40, fontWeight: string = 'normal') {
     const text = new fabric.IText(customText, {
       left: this.docWidth / 2 - 100,
       top: this.docHeight / 2 - 20,
       fontFamily: fontFamily || this.textProps.fontFamily,
-      fontSize: this.textProps.fontSize,
+      fontSize: fontSize,
+      fontWeight: fontWeight,
       fill: this.textProps.fill,
-      name: 'text_' + this.generateId()
+      name: this.generateObjectName('text'),
+      textAlign: 'left'
     } as any);
     this.canvas.add(text);
-    this.canvas.setActiveObject(text);
+    this.selectActiveObject(text);
     this.canvas.requestRenderAll();
     this.savePageState();
   }
@@ -521,6 +631,7 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     const obj = this.canvas.getActiveObject() as any;
     if (obj && (obj.type === 'i-text' || obj.type === 'text')) {
       obj.set(prop, value);
+      (this.textProps as any)[prop] = value;
       this.canvas.requestRenderAll();
       this.savePageState();
     }
@@ -550,10 +661,10 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
         img.set({
           left: this.docWidth / 2 - (img.getScaledWidth() / 2),
           top: this.docHeight / 2 - (img.getScaledHeight() / 2),
-          name: 'img_' + this.generateId()
+          name: this.generateObjectName('img')
         } as any);
         this.canvas.add(img);
-        this.canvas.setActiveObject(img);
+        this.selectActiveObject(img);
         this.canvas.requestRenderAll();
         this.savePageState();
       });
@@ -568,16 +679,119 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       img.set({
         left: this.docWidth / 2 - (img.getScaledWidth() / 2),
         top: this.docHeight / 2 - (img.getScaledHeight() / 2),
-        name: 'img_' + this.generateId()
+        name: this.generateObjectName('img')
       } as any);
       this.canvas.add(img);
-      this.canvas.setActiveObject(img);
+      this.selectActiveObject(img);
       this.canvas.requestRenderAll();
       this.imageUrlInput = '';
       this.savePageState();
     }).catch(err => {
       alert('Could not load image. It might be blocked by CORS.');
     });
+  }
+
+  // --- Videos ---
+  onVideoDeviceUpload(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      this.addVideoToCanvas(url);
+    }
+    event.target.value = '';
+  }
+
+  addVideoFromUrl() {
+    if (this.videoUrlInput) {
+      this.addVideoToCanvas(this.videoUrlInput);
+      this.videoUrlInput = '';
+    }
+  }
+
+  addVideoToCanvas(url: string) {
+    const videoEl = document.createElement('video');
+    videoEl.crossOrigin = 'anonymous';
+    videoEl.muted = true;
+    videoEl.loop = true;
+    videoEl.src = url;
+    videoEl.style.display = 'none';
+    document.body.appendChild(videoEl);
+
+    videoEl.addEventListener('loadeddata', () => {
+      videoEl.width = videoEl.videoWidth;
+      videoEl.height = videoEl.videoHeight;
+      videoEl.play();
+
+      const videoObj = new fabric.Image(videoEl, {
+        left: this.docWidth / 2 - (videoEl.videoWidth / 2),
+        top: this.docHeight / 2 - (videoEl.videoHeight / 2),
+        name: this.generateObjectName('video'),
+        objectCaching: false
+      } as any);
+
+      const maxWidth = Math.min(400, this.docWidth - 40);
+      if (videoObj.width! > maxWidth) {
+        videoObj.scaleToWidth(maxWidth);
+      }
+      
+      videoObj.set({
+        left: this.docWidth / 2 - (videoObj.getScaledWidth() / 2),
+        top: this.docHeight / 2 - (videoObj.getScaledHeight() / 2)
+      });
+
+      this.canvas.add(videoObj);
+      this.selectActiveObject(videoObj);
+      this.canvas.requestRenderAll();
+      this.savePageState();
+      this.startVideoRenderLoop();
+    });
+    
+    videoEl.load();
+  }
+
+  startVideoRenderLoop() {
+    if (this.videoRenderLoopRunning) return;
+    this.videoRenderLoopRunning = true;
+    const render = () => {
+      if (this.canvas) {
+        const videos = this.canvas.getObjects().filter(obj => (obj as any).getElement && (obj as any).getElement().tagName === 'VIDEO');
+        if (videos.length > 0) {
+          // Invalidate cache for videos so they continue playing even when a clipPath (corner radius/mask) is applied
+          videos.forEach(v => {
+            v.set('dirty', true);
+          });
+          this.canvas.renderAll();
+        }
+      }
+      if (this.videoRenderLoopRunning) {
+        fabric.util.requestAnimFrame(render);
+      }
+    };
+    fabric.util.requestAnimFrame(render);
+  }
+
+  isVideoSelected(): boolean {
+    return this.activeObject && 
+           this.activeObjectType === 'image' && 
+           typeof this.activeObject.getElement === 'function' && 
+           this.activeObject.getElement()?.tagName === 'VIDEO';
+  }
+
+  isVideoPlaying(): boolean {
+    if (!this.isVideoSelected()) return false;
+    const videoEl = this.activeObject.getElement();
+    return !videoEl.paused;
+  }
+
+  toggleVideoPlay() {
+    if (this.isVideoSelected()) {
+      const videoEl = this.activeObject.getElement();
+      if (videoEl.paused) {
+        videoEl.play();
+      } else {
+        videoEl.pause();
+      }
+    }
   }
 
   // --- Icons ---
@@ -588,10 +802,11 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       fontFamily: 'Arial', // Fallback for standard unicode symbols
       fontSize: 80,
       fill: '#14b8a6',
-      name: 'icon_' + this.generateId()
+      name: this.generateObjectName('icon'),
+      textAlign: 'center'
     } as any);
     this.canvas.add(text);
-    this.canvas.setActiveObject(text);
+    this.selectActiveObject(text);
     this.canvas.requestRenderAll();
     this.savePageState();
   }
@@ -599,14 +814,14 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   // --- Shapes ---
   addShape(type: 'rect' | 'circle' | 'triangle') {
     let shape;
-    const commonOpts: any = { left: this.docWidth / 2 - 50, top: this.docHeight / 2 - 50, fill: this.shapeProps.fill, stroke: this.shapeProps.stroke, strokeWidth: this.shapeProps.strokeWidth, name: type + '_' + this.generateId() };
+    const commonOpts: any = { left: this.docWidth / 2 - 50, top: this.docHeight / 2 - 50, fill: this.shapeProps.fill, stroke: this.shapeProps.stroke, strokeWidth: this.shapeProps.strokeWidth };
     if (type === 'rect') shape = new fabric.Rect({ ...commonOpts, width: 100, height: 100, rx: this.shapeProps.rx, ry: this.shapeProps.ry });
     else if (type === 'circle') shape = new fabric.Circle({ ...commonOpts, radius: 50 });
     else if (type === 'triangle') shape = new fabric.Triangle({ ...commonOpts, width: 100, height: 100 });
 
     if (shape) {
       this.canvas.add(shape);
-      this.canvas.setActiveObject(shape);
+      this.selectActiveObject(shape);
       this.canvas.requestRenderAll();
       this.savePageState();
     }
@@ -720,12 +935,8 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   updateShapeProp(prop: string, value: any) {
     const obj = this.canvas.getActiveObject() as any;
     if (obj && ['rect', 'circle', 'triangle', 'polygon', 'polyline', 'path'].includes(obj.type)) {
-      if (value === 'transparent') {
-        obj.set(prop, 'transparent');
-        (this.shapeProps as any)[prop] = 'transparent';
-      } else {
-        obj.set(prop, value);
-      }
+      obj.set(prop, value);
+      (this.shapeProps as any)[prop] = value;
       this.canvas.requestRenderAll();
       this.savePageState();
     }
@@ -734,29 +945,15 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   updateCommonProp(prop: string, value: any) {
     const obj = this.canvas.getActiveObject() as any;
     if (obj) {
-      obj.set(prop, parseFloat(value));
+      const parsedValue = parseFloat(value);
+      obj.set(prop, parsedValue);
+      (this.commonProps as any)[prop] = parsedValue;
       this.canvas.requestRenderAll();
       this.savePageState();
     }
   }
 
-  toggleShadow(hasShadow: boolean) {
-    const obj = this.canvas.getActiveObject() as any;
-    if (obj) {
-      if (hasShadow) {
-        obj.set('shadow', new fabric.Shadow({
-          color: 'rgba(0,0,0,0.3)',
-          blur: 10,
-          offsetX: 5,
-          offsetY: 5
-        }));
-      } else {
-        obj.set('shadow', null);
-      }
-      this.canvas.requestRenderAll();
-      this.savePageState();
-    }
-  }
+
 
   toggleDrawingMode() {
     this.isDrawingMode = !this.isDrawingMode;
@@ -767,11 +964,13 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       this.canvas.freeDrawingCursor = 'crosshair';
       this.updateBrush();
     }
+    this.cdr.detectChanges();
   }
 
   updateBrush() {
-    if (!this.canvas.isDrawingMode) return;
-    this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
+    if (!this.canvas.freeDrawingBrush) {
+      this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
+    }
     this.canvas.freeDrawingBrush.color = this.drawingProps.color;
     this.canvas.freeDrawingBrush.width = Number(this.drawingProps.width);
   }
@@ -792,6 +991,7 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       this.canvas.defaultCursor = 'default';
       this.clearTempPolygon();
     }
+    this.cdr.detectChanges();
   }
 
   addPolygonPoint(opt: any) {
@@ -816,7 +1016,7 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       left: x,
       top: y,
       radius: 4 / this.canvas.getZoom(),
-      fill: '#14b8a6',
+      fill: this.drawingProps.color,
       stroke: '#ffffff',
       strokeWidth: 1 / this.canvas.getZoom(),
       originX: 'center',
@@ -831,8 +1031,8 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     if (this.polygonPoints.length > 1) {
       const prevPoint = this.polygonPoints[this.polygonPoints.length - 2];
       const line = new fabric.Line([prevPoint.x, prevPoint.y, x, y], {
-        stroke: '#14b8a6',
-        strokeWidth: 2 / this.canvas.getZoom(),
+        stroke: this.drawingProps.color,
+        strokeWidth: Number(this.drawingProps.width) / this.canvas.getZoom(),
         selectable: false,
         evented: false
       });
@@ -845,8 +1045,8 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
       this.canvas.remove(this.activeLine);
     }
     this.activeLine = new fabric.Line([x, y, x, y], {
-      stroke: '#14b8a6',
-      strokeWidth: 2 / this.canvas.getZoom(),
+      stroke: this.drawingProps.color,
+      strokeWidth: Number(this.drawingProps.width) / this.canvas.getZoom(),
       strokeDashArray: [5, 5],
       selectable: false,
       evented: false
@@ -864,21 +1064,19 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     if (isClosed && this.polygonPoints.length >= 3) {
       shape = new fabric.Polygon(this.polygonPoints, {
         fill: this.shapeProps.fill === 'transparent' ? 'transparent' : this.shapeProps.fill,
-        stroke: this.shapeProps.stroke,
-        strokeWidth: this.shapeProps.strokeWidth || 2,
-        name: 'polygon_' + this.generateId()
+        stroke: this.drawingProps.color,
+        strokeWidth: Number(this.drawingProps.width)
       } as any);
     } else {
       shape = new fabric.Polyline(this.polygonPoints, {
         fill: 'transparent',
-        stroke: this.shapeProps.stroke,
-        strokeWidth: this.shapeProps.strokeWidth || 2,
-        name: 'polyline_' + this.generateId()
+        stroke: this.drawingProps.color,
+        strokeWidth: Number(this.drawingProps.width)
       } as any);
     }
 
     this.canvas.add(shape);
-    this.canvas.setActiveObject(shape);
+    this.selectActiveObject(shape);
     this.savePageState();
     this.togglePolygonMode();
   }
@@ -900,15 +1098,17 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     const objects = this.canvas.getObjects();
     this.canvasLayers = objects.map((obj: any, index) => ({
       id: obj.name || `layer_${index}`,
+      name: obj.name || obj.type,
       type: obj.type,
       obj: obj,
       visible: obj.visible !== false,
       locked: obj.selectable === false || obj.evented === false
     })).reverse(); // top object first
+    this.cdr.detectChanges();
   }
 
   selectLayer(layer: any) {
-    this.canvas.setActiveObject(layer.obj);
+    this.selectActiveObject(layer.obj);
     this.canvas.requestRenderAll();
   }
 
@@ -1024,10 +1224,159 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  duplicateSelected() {
+    const activeObject = this.canvas.getActiveObject();
+    if (!activeObject) return;
+
+    activeObject.clone().then((cloned: any) => {
+      this.canvas.discardActiveObject();
+      cloned.set({
+        left: cloned.left + 20,
+        top: cloned.top + 20,
+        evented: true,
+      });
+
+      if (cloned.type === 'activeSelection') {
+        // For multiple objects, we need to add them individually
+        cloned.canvas = this.canvas;
+        cloned.forEachObject((obj: any) => {
+          this.canvas.add(obj);
+        });
+        cloned.setCoords();
+      } else {
+        this.canvas.add(cloned);
+      }
+
+      this.selectActiveObject(cloned);
+      this.canvas.requestRenderAll();
+      this.savePageState();
+    });
+  }
+
+  alignSelected(alignment: 'left' | 'right' | 'top' | 'bottom' | 'center-h' | 'center-v' | 'center') {
+    const obj = this.canvas.getActiveObject();
+    if (!obj) return;
+
+    const boundingRect = obj.getBoundingRect();
+    const canvasWidth = this.docWidth;
+    const canvasHeight = this.docHeight;
+
+    if (alignment === 'left') {
+      obj.set('left', obj.left - boundingRect.left);
+    } else if (alignment === 'right') {
+      obj.set('left', obj.left + (canvasWidth - boundingRect.left - boundingRect.width));
+    } else if (alignment === 'top') {
+      obj.set('top', obj.top - boundingRect.top);
+    } else if (alignment === 'bottom') {
+      obj.set('top', obj.top + (canvasHeight - boundingRect.top - boundingRect.height));
+    } else if (alignment === 'center-h') {
+      obj.set('left', obj.left + (canvasWidth / 2 - boundingRect.left - boundingRect.width / 2));
+    } else if (alignment === 'center-v') {
+      obj.set('top', obj.top + (canvasHeight / 2 - boundingRect.top - boundingRect.height / 2));
+    } else if (alignment === 'center') {
+      obj.set('left', obj.left + (canvasWidth / 2 - boundingRect.left - boundingRect.width / 2));
+      obj.set('top', obj.top + (canvasHeight / 2 - boundingRect.top - boundingRect.height / 2));
+    }
+
+    obj.setCoords();
+    this.canvas.requestRenderAll();
+    this.savePageState();
+  }
+
+  updateTransformPropsFromObject(obj: any) {
+    if (!obj) return;
+    const width = obj.getScaledWidth();
+    const height = obj.getScaledHeight();
+    this.transformProps = {
+      widthPercent: Math.round((width / this.docWidth) * 100),
+      heightPercent: Math.round((height / this.docHeight) * 100),
+      widthPx: Math.round(width),
+      heightPx: Math.round(height),
+      angle: Math.round(obj.angle || 0),
+      usePx: this.transformProps.usePx, // preserve current toggle state
+      lockAspect: this.transformProps.lockAspect // preserve current toggle state
+    };
+  }
+
+  updateTransformProp(prop: string, value: number) {
+    const obj = this.canvas.getActiveObject();
+    if (!obj) return;
+
+    const originalWidth = obj.getScaledWidth();
+    const originalHeight = obj.getScaledHeight();
+    const aspectRatio = originalWidth / originalHeight;
+
+    let targetWidth = originalWidth;
+    let targetHeight = originalHeight;
+
+    if (prop === 'widthPercent') {
+      targetWidth = (value / 100) * this.docWidth;
+      if (this.transformProps.lockAspect) targetHeight = targetWidth / aspectRatio;
+    } else if (prop === 'heightPercent') {
+      targetHeight = (value / 100) * this.docHeight;
+      if (this.transformProps.lockAspect) targetWidth = targetHeight * aspectRatio;
+    } else if (prop === 'widthPx') {
+      targetWidth = value;
+      if (this.transformProps.lockAspect) targetHeight = targetWidth / aspectRatio;
+    } else if (prop === 'heightPx') {
+      targetHeight = value;
+      if (this.transformProps.lockAspect) targetWidth = targetHeight * aspectRatio;
+    } else if (prop === 'angle') {
+      obj.set('angle', value);
+    }
+
+    if (prop.startsWith('width') || prop.startsWith('height')) {
+      obj.set({ scaleX: targetWidth / obj.width!, scaleY: targetHeight / obj.height! });
+      // Update the other props to stay in sync
+      this.updateTransformPropsFromObject(obj);
+    }
+
+    obj.setCoords();
+    this.canvas.requestRenderAll();
+    this.savePageState();
+  }
+
+  applyAdvancedShadow() {
+    const obj = this.canvas.getActiveObject() as any;
+    if (obj && this.commonProps.hasShadow) {
+      if (this.shadowProps.type === 'glow') {
+        obj.set('shadow', new fabric.Shadow({
+          color: this.shadowProps.color,
+          blur: this.shadowProps.blur,
+          offsetX: 0,
+          offsetY: 0
+        }));
+      } else {
+        obj.set('shadow', new fabric.Shadow({
+          color: this.shadowProps.color,
+          blur: this.shadowProps.blur,
+          offsetX: this.shadowProps.offsetX,
+          offsetY: this.shadowProps.offsetY
+        }));
+      }
+      this.canvas.requestRenderAll();
+      this.savePageState();
+    }
+  }
+
+  toggleShadow(hasShadow: boolean) {
+    this.commonProps.hasShadow = hasShadow;
+    const obj = this.canvas.getActiveObject() as any;
+    if (obj) {
+      if (hasShadow) {
+        this.applyAdvancedShadow();
+      } else {
+        obj.set('shadow', null);
+        this.canvas.requestRenderAll();
+        this.savePageState();
+      }
+    }
+  }
+
   // --- Pages ---
   savePageState() {
     if (!this.canvas) return;
-    const json = JSON.stringify(this.canvas.toJSON());
+    const json = JSON.stringify(this.canvas.toObject(['name', 'selectable', 'evented', 'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY', 'id', '_pathLength']));
     this.pages[this.currentPageIndex] = json;
   }
 
@@ -1037,15 +1386,14 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     this.switchPage(this.pages.length - 1);
   }
 
-  switchPage(index: number) {
+  async switchPage(index: number) {
     this.savePageState(); // save current before switching
     this.currentPageIndex = index;
     const json = this.pages[index];
     if (json) {
-      this.canvas.loadFromJSON(json, () => {
-        this.canvas.requestRenderAll();
-        this.updateLayers();
-      });
+      await this.canvas.loadFromJSON(json);
+      this.canvas.requestRenderAll();
+      this.updateLayers();
     } else {
       this.canvas.clear();
       this.canvas.backgroundColor = this.canvasBgColor;
@@ -1063,14 +1411,110 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     alert('Preview mode would launch a full screen view of the canvas.');
   }
 
-  download() {
-    const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1, multiplier: 1 });
+  toggleDownloadMenu() {
+    this.showDownloadMenu = !this.showDownloadMenu;
+  }
+
+  closeDownloadMenu() {
+    this.showDownloadMenu = false;
+  }
+
+  downloadCurrentPagePNG() {
+    this.closeDownloadMenu();
+    const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
     const link = document.createElement('a');
-    link.download = `${this.documentName}.png`;
+    link.download = `${this.documentName}_page${this.currentPageIndex + 1}.png`;
     link.href = dataURL;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  downloadCurrentPagePDF() {
+    this.closeDownloadMenu();
+    const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
+    const orientation = this.docWidth > this.docHeight ? 'landscape' : 'portrait';
+    const pdf = new jsPDF({
+      orientation,
+      unit: 'px',
+      format: [this.docWidth, this.docHeight],
+      hotfixes: ['px_scaling']
+    });
+    pdf.addImage(dataURL, 'PNG', 0, 0, this.docWidth, this.docHeight);
+    pdf.save(`${this.documentName}_page${this.currentPageIndex + 1}.pdf`);
+  }
+
+  async downloadAllPagesPNG() {
+    this.closeDownloadMenu();
+    this.savePageState();
+    const originalPageIndex = this.currentPageIndex;
+
+    const zip = new JSZip();
+
+    for (let i = 0; i < this.pages.length; i++) {
+      await this.loadPageForExport(i);
+      const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
+      // Extract base64 data from dataURL
+      const base64Data = dataURL.split(',')[1];
+      zip.file(`${this.documentName}_page${i + 1}.png`, base64Data, { base64: true });
+    }
+
+    // Generate ZIP and download
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    link.download = `${this.documentName}_pages.zip`;
+    link.href = URL.createObjectURL(blob);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+    // Restore original page
+    await this.loadPageForExport(originalPageIndex);
+    this.currentPageIndex = originalPageIndex;
+    this.updateLayers();
+  }
+
+  async downloadAllPagesPDF() {
+    this.closeDownloadMenu();
+    this.savePageState();
+    const originalPageIndex = this.currentPageIndex;
+    const orientation = this.docWidth > this.docHeight ? 'landscape' : 'portrait';
+
+    const pdf = new jsPDF({
+      orientation,
+      unit: 'px',
+      format: [this.docWidth, this.docHeight],
+      hotfixes: ['px_scaling']
+    });
+
+    for (let i = 0; i < this.pages.length; i++) {
+      if (i > 0) pdf.addPage([this.docWidth, this.docHeight], orientation);
+      await this.loadPageForExport(i);
+      const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
+      pdf.addImage(dataURL, 'PNG', 0, 0, this.docWidth, this.docHeight);
+    }
+
+    pdf.save(`${this.documentName}.pdf`);
+
+    // Restore original page
+    await this.loadPageForExport(originalPageIndex);
+    this.currentPageIndex = originalPageIndex;
+    this.updateLayers();
+  }
+
+  private async loadPageForExport(index: number): Promise<void> {
+    const json = this.pages[index];
+    if (json) {
+      await this.canvas.loadFromJSON(json);
+      this.canvas.renderAll();
+    } else {
+      this.canvas.clear();
+      this.canvas.backgroundColor = this.canvasBgColor;
+      this.canvas.renderAll();
+    }
+    // Allow canvas to fully render before capturing
+    await new Promise(r => setTimeout(r, 50));
   }
 
   saveDocument() {

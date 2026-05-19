@@ -18,6 +18,10 @@
       <i class="pi pi-image"></i>
       <span>Photos</span>
     </div>
+    <div class="nav-item" [class.active]="activeTool === 'videos'" (click)="setActiveTool('videos')">
+      <i class="pi pi-video"></i>
+      <span>Videos</span>
+    </div>
     <div class="nav-item" [class.active]="activeTool === 'draw'" (click)="setActiveTool('draw')">
       <i class="pi pi-pencil"></i>
       <span>Draw</span>
@@ -45,6 +49,7 @@
           <span *ngSwitchCase="'templates'">Templates</span>
           <span *ngSwitchCase="'text'">Text</span>
           <span *ngSwitchCase="'photos'">Photos</span>
+          <span *ngSwitchCase="'videos'">Videos</span>
           <span *ngSwitchCase="'draw'">Drawing Tools</span>
           <span *ngSwitchCase="'icons'">Icons</span>
           <span *ngSwitchCase="'shapes'">Shapes</span>
@@ -128,9 +133,17 @@
 
       <!-- Feature 3: Text -->
       <div *ngIf="activeTool === 'text'" class="flex flex-column gap-3">
-        <button class="action-btn primary justify-content-center w-full py-3 mb-2 shadow-2" (click)="addText()">
-          <i class="pi pi-plus"></i> Add Heading
-        </button>
+        <div class="flex flex-column gap-2 mb-2">
+          <button class="action-btn primary justify-content-center w-full py-3 shadow-2" (click)="addText('Add Heading', 'Inter', 80, 'bold')">
+            <span style="font-size: 20px; font-weight: bold;">Add Heading</span>
+          </button>
+          <button class="action-btn secondary justify-content-center w-full py-2 shadow-1" (click)="addText('Add Subheading', 'Inter', 40, '600')">
+            <span style="font-size: 16px; font-weight: 600;">Add Subheading</span>
+          </button>
+          <button class="action-btn secondary justify-content-center w-full py-2 shadow-1" (click)="addText('Add a little bit of body text', 'Inter', 24, 'normal')">
+            <span style="font-size: 14px; font-weight: normal;">Add Paragraph</span>
+          </button>
+        </div>
 
         <div class="text-sm font-bold text-500 mb-1 border-bottom-1 border-200 pb-1">Text Styles</div>
         <div class="flex flex-column gap-2 overflow-y-auto max-h-20rem p-1">
@@ -153,10 +166,25 @@
 
         <div style="height: 1px; background: #e2e8f0; margin: 8px 0;"></div>
 
-        <button class="action-btn w-full py-2 shadow-1 transition-all"
-          [ngClass]="isTextOnPathMode ? 'primary' : 'secondary'" (click)="addCurvedText()">
-          <i class="pi" [ngClass]="isTextOnPathMode ? 'pi-times' : 'pi-share-alt'"></i>
-          {{ isTextOnPathMode ? 'Cancel Drawing' : 'Draw Text on Path' }}
+        <button class="action-btn w-full p-2 shadow-1 transition-all flex flex-column align-items-center justify-content-center gap-2 border-1 cursor-pointer"
+          [ngClass]="isTextOnPathMode ? 'primary border-teal-500 bg-teal-50 shadow-2' : 'secondary border-300 bg-white hover:bg-gray-50'" 
+          (click)="addCurvedText()" style="height: auto;">
+          <div class="flex justify-content-center pt-2 opacity-80">
+            <svg width="120" height="40" viewBox="0 0 120 40" fill="none">
+               <path d="M 10 30 Q 60 0 110 30" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" fill="transparent"/>
+               <text x="15" y="18" font-family="Arial" font-size="12" fill="#14b8a6" transform="rotate(-15 25 15)">T</text>
+               <text x="30" y="10" font-family="Arial" font-size="12" fill="#14b8a6" transform="rotate(-5 40 10)">e</text>
+               <text x="45" y="6" font-family="Arial" font-size="12" fill="#14b8a6">x</text>
+               <text x="60" y="5" font-family="Arial" font-size="12" fill="#14b8a6">t</text>
+               <text x="80" y="10" font-family="Arial" font-size="12" fill="#14b8a6" transform="rotate(10 80 10)">P</text>
+               <text x="95" y="16" font-family="Arial" font-size="12" fill="#14b8a6" transform="rotate(20 95 16)">a</text>
+               <text x="110" y="25" font-family="Arial" font-size="12" fill="#14b8a6" transform="rotate(30 110 25)">t</text>
+            </svg>
+          </div>
+          <div class="font-bold flex align-items-center gap-2 pb-2" [ngClass]="isTextOnPathMode ? 'text-teal-700' : 'text-700'">
+            <i class="pi" [ngClass]="isTextOnPathMode ? 'pi-times' : 'pi-share-alt'"></i>
+            {{ isTextOnPathMode ? 'Cancel Drawing' : 'Draw Text on Path' }}
+          </div>
         </button>
 
         <div *ngIf="isTextOnPathMode"
@@ -198,6 +226,37 @@
             </button>
           </div>
           <p class="text-xs text-500 italic px-1">Tip: Use direct image links (ending in .jpg, .png)</p>
+        </div>
+      </div>
+
+      <!-- Feature 4.5: Videos -->
+      <div *ngIf="activeTool === 'videos'" class="flex flex-column gap-4">
+        <!-- Upload Card -->
+        <div
+          class="p-4 border-round-xl border-dashed border-2 border-300 bg-gray-50 flex flex-column align-items-center justify-content-center gap-2 cursor-pointer hover:border-primary hover:bg-teal-50 transition-all relative">
+          <i class="pi pi-cloud-upload text-5xl text-primary"></i>
+          <span class="font-bold text-sm">Upload Video</span>
+          <span class="text-xs text-500 text-center">Click or drag & drop video here</span>
+          <input type="file" (change)="onVideoDeviceUpload($event)" accept="video/*"
+            class="absolute w-full h-full opacity-0 cursor-pointer">
+        </div>
+
+        <div class="flex align-items-center gap-2">
+          <div class="flex-grow-1 h-px bg-300"></div>
+          <span class="text-xs text-400 font-bold">OR URL</span>
+          <div class="flex-grow-1 h-px bg-300"></div>
+        </div>
+
+        <!-- URL Input -->
+        <div class="flex flex-column gap-2">
+          <div class="flex gap-2">
+            <input type="text" [(ngModel)]="videoUrlInput" placeholder="Paste video URL here..."
+              class="flex-grow-1 p-3 border-round-lg border-1 border-300 text-sm focus:border-primary focus:shadow-none outline-none bg-white">
+            <button class="action-btn primary p-3 shadow-1" (click)="addVideoFromUrl()" style="min-width: 60px;">
+              <i class="pi pi-plus text-2xl"></i>
+            </button>
+          </div>
+          <p class="text-xs text-500 italic px-1">Tip: Use direct video links (ending in .mp4)</p>
         </div>
       </div>
 
@@ -259,19 +318,6 @@
             </svg>
           </div>
 
-          <div *ngIf="isDrawingMode" class="flex flex-column gap-3 mt-2 pt-2 border-top-1 border-teal-200"
-            (click)="$event.stopPropagation()">
-            <div class="form-group">
-              <label class="text-xs font-bold mb-1 block">Thickness: {{ drawingProps.width }}px</label>
-              <input type="range" min="1" max="50" [(ngModel)]="drawingProps.width" (ngModelChange)="updateBrush()"
-                class="w-full">
-            </div>
-            <div class="form-group">
-              <label class="text-xs font-bold mb-1 block">Brush Color</label>
-              <input type="color" [(ngModel)]="drawingProps.color" (ngModelChange)="updateBrush()"
-                class="w-full p-0 border-none" style="height: 32px;">
-            </div>
-          </div>
         </div>
 
         <!-- Polygon Tool Card -->
@@ -307,6 +353,21 @@
             </button>
           </div>
         </div>
+
+        <!-- Shared Draw Settings -->
+        <div class="p-3 bg-gray-50 border-round border-300 border-1 flex flex-column gap-3">
+          <div class="text-sm font-bold text-700 border-bottom-1 border-300 pb-2 mb-1">Drawing Settings</div>
+          <div class="form-group">
+            <label class="text-xs font-bold mb-1 block">Thickness: {{ drawingProps.width }}px</label>
+            <input type="range" min="1" max="50" [(ngModel)]="drawingProps.width" (ngModelChange)="updateBrush()"
+              class="w-full">
+          </div>
+          <div class="form-group">
+            <label class="text-xs font-bold mb-1 block">Line Color</label>
+            <input type="color" [(ngModel)]="drawingProps.color" (ngModelChange)="updateBrush()"
+              class="w-full p-0 border-none" style="height: 32px;">
+          </div>
+        </div>
       </div>
 
       <!-- Feature 7: Layers -->
@@ -329,7 +390,7 @@
           <span class="text-sm font-medium text-overflow-ellipsis overflow-hidden white-space-nowrap"
             style="max-width: 120px;">
             <i class="pi mr-2 text-500" [ngClass]="getLayerIcon(layer.type)"></i>
-            {{ layer.type }}
+            {{ layer.name }}
           </span>
 
           <div class="flex gap-1 align-items-center">
@@ -395,7 +456,47 @@
         <div style="width: 1px; height: 24px; background-color: #cbd5e1;" class="mx-1"></div>
         <button class="icon-btn text-white" (click)="help()" title="Help"><i class="pi pi-question-circle"></i></button>
         <button class="action-btn secondary" (click)="preview()"><i class="pi pi-eye"></i> Preview</button>
-        <button class="action-btn primary" (click)="download()"><i class="pi pi-download"></i> Download</button>
+
+        <div class="download-dropdown-wrapper" id="download-dropdown">
+          <button class="action-btn primary" (click)="toggleDownloadMenu()">
+            <i class="pi pi-download"></i> Download
+            <i class="pi pi-chevron-down" style="font-size: 0.7rem; margin-left: 2px;"></i>
+          </button>
+          <div class="download-dropdown-menu" *ngIf="showDownloadMenu">
+            <div class="download-dropdown-backdrop" (click)="closeDownloadMenu()"></div>
+            <div class="download-dropdown-list">
+              <button class="download-option" (click)="downloadCurrentPagePNG()">
+                <i class="pi pi-image"></i>
+                <div class="download-option-text">
+                  <span class="download-option-title">Current Page PNG</span>
+                  <span class="download-option-subtitle">Page {{ currentPageIndex + 1 }} as image</span>
+                </div>
+              </button>
+              <button class="download-option" (click)="downloadCurrentPagePDF()">
+                <i class="pi pi-file-pdf"></i>
+                <div class="download-option-text">
+                  <span class="download-option-title">Current Page PDF</span>
+                  <span class="download-option-subtitle">Page {{ currentPageIndex + 1 }} as PDF</span>
+                </div>
+              </button>
+              <div class="download-divider"></div>
+              <button class="download-option" (click)="downloadAllPagesPNG()">
+                <i class="pi pi-images"></i>
+                <div class="download-option-text">
+                  <span class="download-option-title">All Pages PNG</span>
+                  <span class="download-option-subtitle">{{ pages.length }} page(s) as images</span>
+                </div>
+              </button>
+              <button class="download-option" (click)="downloadAllPagesPDF()">
+                <i class="pi pi-file-pdf"></i>
+                <div class="download-option-text">
+                  <span class="download-option-title">All Pages PDF</span>
+                  <span class="download-option-subtitle">{{ pages.length }} page(s) in one PDF</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -403,156 +504,324 @@
     <div class="contextual-toolbar">
       <!-- Element Selected State -->
       <div class="toolbar-content-wrapper fadein animation-duration-200" *ngIf="showFloatingToolbar">
-        <!-- Contextual: Text properties -->
-        <ng-container *ngIf="activeObjectType === 'i-text' || activeObjectType === 'text'">
-          <select [(ngModel)]="textProps.fontFamily" (ngModelChange)="updateTextProp('fontFamily', $event)"
-            class="prop-select">
-            <option value="Inter">Inter</option>
-            <option value="Outfit">Outfit</option>
-            <option value="Arial">Arial</option>
-            <option value="Times New Roman">Times New Roman</option>
-          </select>
-          <span class="text-xs font-bold text-500 uppercase ml-1">Size</span>
-          <input type="number" [(ngModel)]="textProps.fontSize" (ngModelChange)="updateTextProp('fontSize', $event)"
-            class="prop-input" style="width: 60px;">
-          <span class="text-xs font-bold text-500 uppercase ml-1">Color</span>
-          <input type="color" [(ngModel)]="textProps.fill" (ngModelChange)="updateTextProp('fill', $event)"
-            class="prop-color">
 
-          <div class="flex gap-1 border-left-1 border-300 pl-2 ml-1">
-            <button class="icon-btn-small" [class.active]="textProps.fontWeight === 'bold'"
-              (click)="toggleTextProp('fontWeight', 'bold', 'normal')"><span class="font-bold text-sm">B</span></button>
-            <button class="icon-btn-small" [class.active]="textProps.fontStyle === 'italic'"
-              (click)="toggleTextProp('fontStyle', 'italic', 'normal')"><span
-                class="font-italic text-sm">I</span></button>
-            <button class="icon-btn-small" [class.active]="textProps.underline"
-              (click)="toggleTextProp('underline', true, false)"><span class="underline text-sm"
-                style="text-decoration: underline;">U</span></button>
-          </div>
-          <div class="flex gap-1 border-left-1 border-300 pl-2 ml-1">
-            <button class="icon-btn-small" [class.active]="textProps.textAlign === 'left'"
-              (click)="updateTextProp('textAlign', 'left')"><i class="pi pi-align-left text-sm"></i></button>
-            <button class="icon-btn-small" [class.active]="textProps.textAlign === 'center'"
-              (click)="updateTextProp('textAlign', 'center')"><i class="pi pi-align-center text-sm"></i></button>
-            <button class="icon-btn-small" [class.active]="textProps.textAlign === 'right'"
-              (click)="updateTextProp('textAlign', 'right')"><i class="pi pi-align-right text-sm"></i></button>
-          </div>
-        </ng-container>
-
-        <!-- Contextual: Shape properties -->
-        <ng-container
-          *ngIf="activeObjectType === 'rect' || activeObjectType === 'circle' || activeObjectType === 'triangle' || activeObjectType === 'polygon' || activeObjectType === 'polyline' || activeObjectType === 'path'">
-          <div class="flex align-items-center gap-2">
-            <span class="text-xs font-bold text-500 uppercase ml-1">Fill</span>
-            <input type="color" [(ngModel)]="shapeProps.fill" (ngModelChange)="updateShapeProp('fill', $event)"
-              class="prop-color" title="Fill Color">
-            <button class="action-btn-small" (click)="updateShapeProp('fill', 'transparent')">None</button>
-          </div>
-          <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2 ml-1">
-            <span class="text-xs font-bold text-500 uppercase">Border</span>
-            <input type="color" [(ngModel)]="shapeProps.stroke" (ngModelChange)="updateShapeProp('stroke', $event)"
-              class="prop-color" title="Border Color">
-            <input type="number" [(ngModel)]="shapeProps.strokeWidth"
-              (ngModelChange)="updateShapeProp('strokeWidth', $event)" class="prop-input" style="width: 50px;"
-              title="Border Width">
-          </div>
-          <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2 ml-1"
-            *ngIf="activeObjectType === 'rect'">
-            <span class="text-xs font-bold text-500 uppercase">Corner</span>
-            <input type="number" [(ngModel)]="shapeProps.rx"
-              (ngModelChange)="updateShapeProp('rx', $event); updateShapeProp('ry', $event)" class="prop-input"
-              style="width: 50px;">
-          </div>
-        </ng-container>
-
-        <!-- Contextual: Image properties -->
-        <ng-container *ngIf="activeObjectType === 'image'">
-          <!-- Border Radius -->
-          <div class="flex align-items-center gap-2 mr-2">
-            <span class="text-xs font-bold text-500 uppercase">Corner</span>
-            <input type="number" [(ngModel)]="imageProps.borderRadius"
-              (ngModelChange)="updateImageProp('borderRadius', $event)" class="prop-input" style="width: 45px;"
-              title="Corner Radius">
+        <!-- Top Row: Common Properties -->
+        <div class="toolbar-row toolbar-row-common">
+          <div class="flex align-items-center gap-1 bg-gray-100 px-2 py-1 border-round">
+            <i class="pi text-500" [ngClass]="getLayerIcon(activeObjectType || '')"></i>
+            <span class="text-xs font-bold text-600 uppercase">{{ activeObjectName }}</span>
           </div>
 
-          <!-- Border Color & Width -->
-          <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2">
-            <span class="text-xs font-bold text-500 uppercase">Border</span>
-            <input type="color" [(ngModel)]="imageProps.stroke" (ngModelChange)="updateImageProp('stroke', $event)"
-              class="prop-color" title="Border Color">
-            <input type="number" [(ngModel)]="imageProps.strokeWidth"
-              (ngModelChange)="updateImageProp('strokeWidth', $event)" class="prop-input" style="width: 45px;"
-              title="Border Width">
-          </div>
+          <div class="toolbar-divider"></div>
 
-          <!-- Masks -->
-          <div class="flex gap-1 border-left-1 border-300 pl-2">
-            <button class="icon-btn-small" (click)="applyImageMask('none')" title="Square"><i
-                class="pi pi-stop"></i></button>
-            <button class="icon-btn-small" (click)="applyImageMask('circle')" title="Circle"><i
-                class="pi pi-circle"></i></button>
-            <button class="icon-btn-small" (click)="applyImageMask('star')" title="Star"><i
-                class="pi pi-star"></i></button>
-            <button class="icon-btn-small" (click)="applyImageMask('triangle')" title="Triangle"><i
-                class="pi pi-caret-up"></i></button>
-          </div>
+          <!-- Transform Popover Trigger -->
+          <div class="popover-container">
+            <button class="action-btn-small" [class.active]="activePopover === 'transform'"
+              (click)="togglePopover('transform')">
+              <i class="pi pi-arrows-alt"></i> Transform
+              <i class="pi pi-chevron-down text-xs ml-1"></i>
+            </button>
 
-          <!-- Frames -->
-          <div class="flex gap-1 border-left-1 border-300 pl-2 mr-1">
-            <button class="action-btn-small" [class.active]="imageProps.frame === 'modern'"
-              (click)="applyImageFrame('modern')">Modern</button>
-            <button class="action-btn-small" [class.active]="imageProps.frame === 'classic'"
-              (click)="applyImageFrame('classic')">Classic</button>
-            <button class="action-btn-small" [class.active]="imageProps.frame === 'white'"
-              (click)="applyImageFrame('white')">Polaroid</button>
-          </div>
-
-          <!-- Pan (Image in Mask) -->
-          <div class="flex align-items-center gap-1 border-left-1 border-300 pl-2"
-            *ngIf="imageProps.borderRadius > 0 || activeObject?.clipPath">
-            <span class="text-xs text-500 font-bold mr-1">Pan:</span>
-            <div class="grid-pan">
-              <button class="pan-btn" (click)="panImageMask('up'); $event.stopPropagation()"><i
-                  class="pi pi-chevron-up"></i></button>
-              <button class="pan-btn" (click)="panImageMask('left'); $event.stopPropagation()"><i
-                  class="pi pi-chevron-left"></i></button>
-              <button class="pan-btn" (click)="panImageMask('right'); $event.stopPropagation()"><i
-                  class="pi pi-chevron-right"></i></button>
-              <button class="pan-btn" (click)="panImageMask('down'); $event.stopPropagation()"><i
-                  class="pi pi-chevron-down"></i></button>
+            <!-- Transform Popover Content -->
+            <div class="popover-menu" *ngIf="activePopover === 'transform'">
+              <div class="popover-backdrop" (click)="closePopover()"></div>
+              <div class="popover-content">
+                <div class="text-xs font-bold text-500 uppercase mb-2">Dimensions</div>
+                <div class="flex align-items-center gap-2 mb-2">
+                  <button class="action-btn-small flex-1" [class.active]="transformProps.usePx"
+                    (click)="transformProps.usePx = true">px</button>
+                  <button class="action-btn-small flex-1" [class.active]="!transformProps.usePx"
+                    (click)="transformProps.usePx = false">%</button>
+                  <button class="icon-btn-small" [class.active]="transformProps.lockAspect"
+                    (click)="transformProps.lockAspect = !transformProps.lockAspect" title="Lock Aspect Ratio">
+                    <i class="pi" [ngClass]="transformProps.lockAspect ? 'pi-link' : 'pi-stop'"></i>
+                  </button>
+                </div>
+                <div class="grid-2 mb-3">
+                  <div class="flex flex-column gap-1">
+                    <span class="text-xs text-500">W</span>
+                    <input *ngIf="transformProps.usePx" type="number" [(ngModel)]="transformProps.widthPx"
+                      (ngModelChange)="updateTransformProp('widthPx', $event)" class="prop-input w-full">
+                    <input *ngIf="!transformProps.usePx" type="number" [(ngModel)]="transformProps.widthPercent"
+                      (ngModelChange)="updateTransformProp('widthPercent', $event)" class="prop-input w-full">
+                  </div>
+                  <div class="flex flex-column gap-1">
+                    <span class="text-xs text-500">H</span>
+                    <input *ngIf="transformProps.usePx" type="number" [(ngModel)]="transformProps.heightPx"
+                      (ngModelChange)="updateTransformProp('heightPx', $event)" class="prop-input w-full">
+                    <input *ngIf="!transformProps.usePx" type="number" [(ngModel)]="transformProps.heightPercent"
+                      (ngModelChange)="updateTransformProp('heightPercent', $event)" class="prop-input w-full">
+                  </div>
+                </div>
+                <div class="text-xs font-bold text-500 uppercase mb-2">Rotation</div>
+                <div class="flex align-items-center gap-2">
+                  <input type="range" min="0" max="360" [(ngModel)]="transformProps.angle"
+                    (ngModelChange)="updateTransformProp('angle', $event)" class="w-full">
+                  <input type="number" [(ngModel)]="transformProps.angle"
+                    (ngModelChange)="updateTransformProp('angle', $event)" class="prop-input" style="width: 50px;">
+                </div>
+              </div>
             </div>
           </div>
-        </ng-container>
 
-        <!-- Common: Opacity and Shadow -->
-        <div style="width: 1px; height: 20px; background-color: #cbd5e1;" class="mx-2"></div>
-        <div class="flex align-items-center gap-2">
-          <span class="text-xs font-bold text-500 uppercase" title="Opacity">Opacity</span>
-          <input type="range" min="0" max="1" step="0.05" [(ngModel)]="commonProps.opacity"
-            (ngModelChange)="updateCommonProp('opacity', $event)" style="width: 60px;">
-        </div>
-        <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2 ml-1">
-          <label class="flex align-items-center gap-1 cursor-pointer m-0">
-            <input type="checkbox" [(ngModel)]="commonProps.hasShadow" (ngModelChange)="toggleShadow($event)">
-            <span class="text-xs font-bold text-500 uppercase">Shadow</span>
-          </label>
+          <!-- Shadow Popover Trigger -->
+          <div class="toolbar-divider"></div>
+          <div class="popover-container">
+            <button class="action-btn-small" [class.active]="activePopover === 'shadow'"
+              (click)="togglePopover('shadow')">
+              <i class="pi pi-clone"></i> Effects
+              <i class="pi pi-chevron-down text-xs ml-1"></i>
+            </button>
+
+            <!-- Shadow Popover Content -->
+            <div class="popover-menu" *ngIf="activePopover === 'shadow'">
+              <div class="popover-backdrop" (click)="closePopover()"></div>
+              <div class="popover-content">
+                <div class="flex align-items-center justify-content-between mb-3 border-bottom-1 border-300 pb-2">
+                  <span class="text-sm font-bold text-700">Enable Shadow</span>
+                  <input type="checkbox" [(ngModel)]="commonProps.hasShadow" (ngModelChange)="toggleShadow($event)">
+                </div>
+
+                <div *ngIf="commonProps.hasShadow" class="flex flex-column gap-3 fadein">
+                  <div class="flex flex-column gap-1">
+                    <span class="text-xs text-500">Preset</span>
+                    <select [(ngModel)]="shadowProps.type" (ngModelChange)="applyAdvancedShadow()"
+                      class="prop-select w-full">
+                      <option value="drop">Drop Shadow</option>
+                      <option value="glow">Glow</option>
+                    </select>
+                  </div>
+                  <div class="flex flex-column gap-1">
+                    <span class="text-xs text-500">Color</span>
+                    <div class="flex gap-2">
+                      <input type="color" [(ngModel)]="shadowProps.color" (ngModelChange)="applyAdvancedShadow()"
+                        class="prop-color flex-shrink-0" style="width: 32px; height: 32px;">
+                      <input type="text" [(ngModel)]="shadowProps.color" (ngModelChange)="applyAdvancedShadow()"
+                        class="prop-input w-full">
+                    </div>
+                  </div>
+                  <div class="flex flex-column gap-1">
+                    <span class="text-xs text-500">Blur: {{shadowProps.blur}}</span>
+                    <input type="range" min="0" max="50" [(ngModel)]="shadowProps.blur"
+                      (ngModelChange)="applyAdvancedShadow()" class="w-full">
+                  </div>
+                  <div *ngIf="shadowProps.type === 'drop'" class="grid-2">
+                    <div class="flex flex-column gap-1">
+                      <span class="text-xs text-500">Offset X: {{shadowProps.offsetX}}</span>
+                      <input type="range" min="-50" max="50" [(ngModel)]="shadowProps.offsetX"
+                        (ngModelChange)="applyAdvancedShadow()" class="w-full">
+                    </div>
+                    <div class="flex flex-column gap-1">
+                      <span class="text-xs text-500">Offset Y: {{shadowProps.offsetY}}</span>
+                      <input type="range" min="-50" max="50" [(ngModel)]="shadowProps.offsetY"
+                        (ngModelChange)="applyAdvancedShadow()" class="w-full">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="toolbar-divider"></div>
+          <div class="flex align-items-center gap-2">
+            <span class="text-xs font-bold text-500 uppercase" title="Opacity">Opacity</span>
+            <input type="range" min="0" max="1" step="0.05" [(ngModel)]="commonProps.opacity"
+              (ngModelChange)="updateCommonProp('opacity', $event)" style="width: 60px;">
+          </div>
+
+          <!-- Layer Management -->
+          <div class="toolbar-divider"></div>
+          <div class="flex align-items-center gap-1">
+            <button class="icon-btn-small" (click)="moveLayerUp({obj: activeObject})" title="Bring Forward"><i
+                class="pi pi-angle-up"></i></button>
+            <button class="icon-btn-small" (click)="moveLayerDown({obj: activeObject})" title="Send Backward"><i
+                class="pi pi-angle-down"></i></button>
+          </div>
+
+          <!-- Alignment Controls -->
+          <div class="toolbar-divider"></div>
+          <div class="flex align-items-center gap-1">
+            <button class="icon-btn-small" (click)="alignSelected('left')" title="Align Left"><i
+                class="pi pi-align-left"></i></button>
+            <button class="icon-btn-small" (click)="alignSelected('center-h')" title="Align Center Horizontal"><i
+                class="pi pi-align-center"></i></button>
+            <button class="icon-btn-small" (click)="alignSelected('right')" title="Align Right"><i
+                class="pi pi-align-right"></i></button>
+            <div style="width: 1px; height: 16px; background-color: #e2e8f0;" class="mx-1"></div>
+            <button class="icon-btn-small" (click)="alignSelected('top')" title="Align Top"><i
+                class="pi pi-chevron-up"></i></button>
+            <button class="icon-btn-small" (click)="alignSelected('center-v')" title="Align Center Vertical"><i
+                class="pi pi-minus"></i></button>
+            <button class="icon-btn-small" (click)="alignSelected('bottom')" title="Align Bottom"><i
+                class="pi pi-chevron-down"></i></button>
+            <div style="width: 1px; height: 16px; background-color: #e2e8f0;" class="mx-1"></div>
+            <button class="icon-btn-small" (click)="alignSelected('center')" title="Align Center Both"><i
+                class="pi pi-expand"></i></button>
+          </div>
+
+          <!-- Duplicate & Delete -->
+          <div class="toolbar-divider"></div>
+          <button class="icon-btn-small" (click)="duplicateSelected()" title="Duplicate (Ctrl+D)"><i
+              class="pi pi-copy"></i></button>
+          <button class="icon-btn-small text-red-500 hover:bg-red-50" (click)="deleteSelected()" title="Delete (Del)"><i
+              class="pi pi-trash"></i></button>
         </div>
 
-        <!-- Layer Management -->
-        <div style="width: 1px; height: 20px; background-color: #cbd5e1;" class="mx-2"></div>
-        <div class="flex align-items-center gap-1">
-          <button class="icon-btn-small" (click)="moveLayerUp({obj: activeObject})" title="Bring to Front">
-            <i class="pi pi-angle-double-up"></i>
-          </button>
-          <button class="icon-btn-small" (click)="moveLayerDown({obj: activeObject})" title="Send to Back">
-            <i class="pi pi-angle-double-down"></i>
-          </button>
-        </div>
+        <!-- Bottom Row: Specific Properties -->
+        <div class="toolbar-row toolbar-row-specific">
+          <!-- Contextual: Text properties -->
+          <ng-container *ngIf="activeObjectType === 'i-text' || activeObjectType === 'text'">
+            <select [(ngModel)]="textProps.fontFamily" (ngModelChange)="updateTextProp('fontFamily', $event)"
+              class="prop-select">
+              <option value="Inter">Inter</option>
+              <option value="Outfit">Outfit</option>
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="VT323">VT323</option>
+              <option value="Pacifico">Pacifico</option>
+              <option value="Lato">Lato</option>
+            </select>
+            <span class="text-xs font-bold text-500 uppercase ml-1">Size</span>
+            <input type="number" [(ngModel)]="textProps.fontSize" (ngModelChange)="updateTextProp('fontSize', $event)"
+              class="prop-input" style="width: 60px;">
+            <span class="text-xs font-bold text-500 uppercase ml-1">Color</span>
+            <input type="color" [(ngModel)]="textProps.fill" (ngModelChange)="updateTextProp('fill', $event)"
+              class="prop-color">
 
-        <div style="width: 1px; height: 20px; background-color: #cbd5e1;" class="mx-2"></div>
-        <button class="icon-btn-small text-red-500 hover:bg-red-50" (click)="deleteSelected()" title="Delete (Del)">
-          <i class="pi pi-trash"></i>
-        </button>
+            <div class="flex gap-1 border-left-1 border-300 pl-2 ml-1">
+              <button class="icon-btn-small" [class.active]="textProps.fontWeight === 'bold'"
+                (click)="toggleTextProp('fontWeight', 'bold', 'normal')"><span
+                  class="font-bold text-sm">B</span></button>
+              <button class="icon-btn-small" [class.active]="textProps.fontStyle === 'italic'"
+                (click)="toggleTextProp('fontStyle', 'italic', 'normal')"><span
+                  class="font-italic text-sm">I</span></button>
+              <button class="icon-btn-small" [class.active]="textProps.underline"
+                (click)="toggleTextProp('underline', true, false)"><span class="underline text-sm"
+                  style="text-decoration: underline;">U</span></button>
+            </div>
+            <div class="flex gap-1 border-left-1 border-300 pl-2 ml-1">
+              <button class="icon-btn-small" [class.active]="textProps.textAlign === 'left'"
+                (click)="updateTextProp('textAlign', 'left')"><i class="pi pi-align-left text-sm"></i></button>
+              <button class="icon-btn-small" [class.active]="textProps.textAlign === 'center'"
+                (click)="updateTextProp('textAlign', 'center')"><i class="pi pi-align-center text-sm"></i></button>
+              <button class="icon-btn-small" [class.active]="textProps.textAlign === 'right'"
+                (click)="updateTextProp('textAlign', 'right')"><i class="pi pi-align-right text-sm"></i></button>
+            </div>
+          </ng-container>
+
+          <!-- Contextual: Shape properties -->
+          <ng-container
+            *ngIf="activeObjectType === 'rect' || activeObjectType === 'circle' || activeObjectType === 'triangle' || activeObjectType === 'polygon' || activeObjectType === 'polyline' || activeObjectType === 'path'">
+            <div class="flex align-items-center gap-2">
+              <span class="text-xs font-bold text-500 uppercase">Fill</span>
+              <input type="color" [(ngModel)]="shapeProps.fill" (ngModelChange)="updateShapeProp('fill', $event)"
+                class="prop-color" title="Fill Color">
+              <button class="action-btn-small" (click)="updateShapeProp('fill', 'transparent')">None</button>
+            </div>
+            <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2 ml-1">
+              <span class="text-xs font-bold text-500 uppercase">Border</span>
+              <input type="color" [(ngModel)]="shapeProps.stroke" (ngModelChange)="updateShapeProp('stroke', $event)"
+                class="prop-color" title="Border Color">
+              <input type="number" [(ngModel)]="shapeProps.strokeWidth"
+                (ngModelChange)="updateShapeProp('strokeWidth', $event)" class="prop-input" style="width: 50px;"
+                title="Border Width">
+            </div>
+            <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2 ml-1"
+              *ngIf="activeObjectType === 'rect'">
+              <span class="text-xs font-bold text-500 uppercase">Corner</span>
+              <input type="number" [(ngModel)]="shapeProps.rx"
+                (ngModelChange)="updateShapeProp('rx', $event); updateShapeProp('ry', $event)" class="prop-input"
+                style="width: 50px;">
+            </div>
+          </ng-container>
+
+          <!-- Contextual: Image properties -->
+          <ng-container *ngIf="activeObjectType === 'image'">
+            <div class="flex align-items-center gap-2 mr-2 border-right-1 border-300 pr-3" *ngIf="isVideoSelected()">
+              <button class="action-btn-small flex align-items-center gap-2" (click)="toggleVideoPlay()" [ngClass]="isVideoPlaying() ? 'secondary' : 'primary'">
+                <i class="pi" [ngClass]="isVideoPlaying() ? 'pi-pause' : 'pi-play'"></i>
+                {{ isVideoPlaying() ? 'Pause' : 'Play' }}
+              </button>
+            </div>
+
+            <div class="flex align-items-center gap-2 mr-2" [ngClass]="{'ml-1': isVideoSelected()}">
+              <span class="text-xs font-bold text-500 uppercase">Corner</span>
+              <input type="number" [(ngModel)]="imageProps.borderRadius"
+                (ngModelChange)="updateImageProp('borderRadius', $event)" class="prop-input" style="width: 45px;"
+                title="Corner Radius">
+            </div>
+
+            <div class="flex align-items-center gap-2 border-left-1 border-300 pl-2">
+              <span class="text-xs font-bold text-500 uppercase">Border</span>
+              <input type="color" [(ngModel)]="imageProps.stroke" (ngModelChange)="updateImageProp('stroke', $event)"
+                class="prop-color" title="Border Color">
+              <input type="number" [(ngModel)]="imageProps.strokeWidth"
+                (ngModelChange)="updateImageProp('strokeWidth', $event)" class="prop-input" style="width: 45px;"
+                title="Border Width">
+            </div>
+
+            <!-- Image Masks Dropdown -->
+            <div class="popover-container border-left-1 border-300 pl-2">
+              <button class="action-btn-small" [class.active]="activePopover === 'mask'"
+                (click)="togglePopover('mask')">
+                <i class="pi pi-images"></i> Mask
+                <i class="pi pi-chevron-down text-xs ml-1"></i>
+              </button>
+              <div class="popover-menu" *ngIf="activePopover === 'mask'">
+                <div class="popover-backdrop" (click)="closePopover()"></div>
+                <div class="popover-content p-2 grid-2" style="width: 140px;">
+                  <button class="icon-btn border-1 border-300 w-full" (click)="applyImageMask('none'); closePopover()"
+                    title="None"><i class="pi pi-stop"></i></button>
+                  <button class="icon-btn border-1 border-300 w-full" (click)="applyImageMask('circle'); closePopover()"
+                    title="Circle"><i class="pi pi-circle"></i></button>
+                  <button class="icon-btn border-1 border-300 w-full" (click)="applyImageMask('star'); closePopover()"
+                    title="Star"><i class="pi pi-star"></i></button>
+                  <button class="icon-btn border-1 border-300 w-full"
+                    (click)="applyImageMask('triangle'); closePopover()" title="Triangle"><i
+                      class="pi pi-caret-up"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Image Frames Dropdown -->
+            <div class="popover-container border-left-1 border-300 pl-2">
+              <button class="action-btn-small" [class.active]="activePopover === 'frame'"
+                (click)="togglePopover('frame')">
+                <i class="pi pi-box"></i> Frame
+                <i class="pi pi-chevron-down text-xs ml-1"></i>
+              </button>
+              <div class="popover-menu" *ngIf="activePopover === 'frame'">
+                <div class="popover-backdrop" (click)="closePopover()"></div>
+                <div class="popover-content p-2 flex flex-column gap-2" style="width: 120px;">
+                  <button class="action-btn secondary w-full text-left" [class.primary]="imageProps.frame === 'none'"
+                    (click)="applyImageFrame('none'); closePopover()">None</button>
+                  <button class="action-btn secondary w-full text-left" [class.primary]="imageProps.frame === 'modern'"
+                    (click)="applyImageFrame('modern'); closePopover()">Modern</button>
+                  <button class="action-btn secondary w-full text-left" [class.primary]="imageProps.frame === 'classic'"
+                    (click)="applyImageFrame('classic'); closePopover()">Classic</button>
+                  <button class="action-btn secondary w-full text-left" [class.primary]="imageProps.frame === 'white'"
+                    (click)="applyImageFrame('white'); closePopover()">Polaroid</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pan (Image in Mask) -->
+            <div class="flex align-items-center gap-1 border-left-1 border-300 pl-2"
+              *ngIf="imageProps.borderRadius > 0 || activeObject?.clipPath">
+              <span class="text-xs text-500 font-bold mr-1">Pan:</span>
+              <div class="grid-pan">
+                <button class="pan-btn" (click)="panImageMask('up'); $event.stopPropagation()"><i
+                    class="pi pi-chevron-up"></i></button>
+                <button class="pan-btn" (click)="panImageMask('left'); $event.stopPropagation()"><i
+                    class="pi pi-chevron-left"></i></button>
+                <button class="pan-btn" (click)="panImageMask('right'); $event.stopPropagation()"><i
+                    class="pi pi-chevron-right"></i></button>
+                <button class="pan-btn" (click)="panImageMask('down'); $event.stopPropagation()"><i
+                    class="pi pi-chevron-down"></i></button>
+              </div>
+            </div>
+          </ng-container>
+        </div>
       </div>
 
       <!-- Placeholder State (No selection) -->
