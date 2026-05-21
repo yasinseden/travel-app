@@ -425,8 +425,9 @@
   <main class="workspace-container">
     <header class="top-bar text-white">
       <div class="left-actions">
-        <button class="action-btn secondary" (click)="saveDocument()" title="Save Design">
-          <i class="pi pi-save"></i> Save
+        <button class="action-btn secondary" (click)="saveDocument()" title="Save Design" [disabled]="isSaving">
+          <i class="pi" [ngClass]="isSaving ? 'pi-spin pi-spinner' : 'pi-save'"></i>
+          {{ isSaving ? 'Saving...' : 'Save' }}
         </button>
         <input type="text" class="doc-title" [(ngModel)]="documentName">
         <div class="flex align-items-center gap-1 bg-gray-100 border-round px-2 py-1 ml-4">

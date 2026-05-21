@@ -1,10 +1,13 @@
 import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import * as fabric from 'fabric';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
+import { Magazine } from '../models/magazine.model';
+import { MagazineService } from '../services/magazine.service';
 
 type ActiveTool = 'settings' | 'templates' | 'text' | 'photos' | 'videos' | 'draw' | 'icons' | 'shapes' | 'layers' | null;
 
@@ -71,10 +74,45 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   activeLine: fabric.Line | null = null;
   tempPointMarkers: fabric.Circle[] = [];
 
-  constructor(private router: Router, private cdr: ChangeDetectorRef) { }
+  documentId: string | null = null;
+  isSaving = false;
+
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private location: Location,
+    private cdr: ChangeDetectorRef,
+    private magazineService: MagazineService
+  ) { }
 
   ngOnInit() {
-    this.pages.push(''); // Initial empty page
+    // Check if we're editing an existing document
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (id) {
+        this.documentId = id;
+        this.loadExistingDocument(id);
+      } else {
+        this.pages.push(''); // Initial empty page for new document
+      }
+    });
+  }
+
+  loadExistingDocument(id: string) {
+    const doc = this.magazineService.getMagazine(id);
+    if (doc) {
+      this.documentName = doc.title;
+      this.docWidth = doc.settings.width;
+      this.docHeight = doc.settings.height;
+      this.docUnit = doc.settings.unit;
+      this.canvasBgColor = doc.settings.canvasBgColor;
+      this.pages = [...doc.pages];
+      if (this.pages.length === 0) {
+        this.pages.push('');
+      }
+    } else {
+      this.pages.push('');
+    }
   }
 
   private preventDefaultZoom = (e: WheelEvent) => {
@@ -87,6 +125,13 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     this.initCanvas();
     this.setupPanning();
     window.addEventListener('wheel', this.preventDefaultZoom, { passive: false });
+
+    // If loading an existing document, directly load page data WITHOUT saving empty canvas state
+    if (this.documentId && this.pages[0]) {
+      setTimeout(async () => {
+        await this.loadPageDirect(0);
+      }, 100);
+    }
   }
 
   ngOnDestroy() {
@@ -726,7 +771,9 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
         left: this.docWidth / 2 - (videoEl.videoWidth / 2),
         top: this.docHeight / 2 - (videoEl.videoHeight / 2),
         name: this.generateObjectName('video'),
-        objectCaching: false
+        objectCaching: false,
+        isVideo: true,
+        videoSrc: url
       } as any);
 
       const maxWidth = Math.min(400, this.docWidth - 40);
@@ -1376,14 +1423,24 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
   // --- Pages ---
   savePageState() {
     if (!this.canvas) return;
-    const json = JSON.stringify(this.canvas.toObject(['name', 'selectable', 'evented', 'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY', 'id', '_pathLength']));
-    this.pages[this.currentPageIndex] = json;
+    const obj = this.canvas.toObject(['name', 'selectable', 'evented', 'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY', 'id', '_pathLength', 'isVideo', 'videoSrc']);
+    
+    // Replace src for video objects with a 1x1 transparent PNG to prevent Fabric's loadFromJSON from failing on video files
+    if (obj && obj.objects) {
+      obj.objects.forEach((o: any) => {
+        if (o.isVideo) {
+          o.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        }
+      });
+    }
+    
+    this.pages[this.currentPageIndex] = JSON.stringify(obj);
   }
 
-  addNewPage() {
+  async addNewPage() {
     this.savePageState();
     this.pages.push('');
-    this.switchPage(this.pages.length - 1);
+    await this.switchPage(this.pages.length - 1);
   }
 
   async switchPage(index: number) {
@@ -1392,6 +1449,65 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     const json = this.pages[index];
     if (json) {
       await this.canvas.loadFromJSON(json);
+      await this.restoreVideoElements();
+      this.canvas.requestRenderAll();
+      this.updateLayers();
+    } else {
+      this.canvas.clear();
+      this.canvas.backgroundColor = this.canvasBgColor;
+      this.canvas.requestRenderAll();
+      this.updateLayers();
+    }
+  }
+
+  /** After loadFromJSON, scan for objects with isVideo flag and replace their source with a real <video> element */
+  private async restoreVideoElements(): Promise<void> {
+    const objects = this.canvas.getObjects();
+    let hasVideo = false;
+    for (const obj of objects) {
+      const o = obj as any;
+      if (o.isVideo && o.videoSrc) {
+        hasVideo = true;
+        const videoEl = document.createElement('video');
+        videoEl.crossOrigin = 'anonymous';
+        videoEl.muted = true;
+        videoEl.loop = true;
+        videoEl.src = o.videoSrc;
+        videoEl.style.display = 'none';
+        document.body.appendChild(videoEl);
+
+        await new Promise<void>((resolve) => {
+          videoEl.addEventListener('loadeddata', () => {
+            videoEl.width = videoEl.videoWidth;
+            videoEl.height = videoEl.videoHeight;
+            videoEl.play();
+            // Replace the image element with the video element
+            (o as any).setElement(videoEl);
+            o.set('objectCaching', false);
+            o.set('dirty', true);
+            resolve();
+          });
+          videoEl.addEventListener('error', () => {
+            console.warn('Failed to restore video:', o.videoSrc);
+            resolve();
+          });
+          videoEl.load();
+        });
+      }
+    }
+    if (hasVideo) {
+      this.startVideoRenderLoop();
+    }
+  }
+
+  /** Load a page directly WITHOUT saving the current canvas state first.
+   *  Used when initially loading a document to avoid overwriting page data with empty canvas. */
+  async loadPageDirect(index: number) {
+    this.currentPageIndex = index;
+    const json = this.pages[index];
+    if (json) {
+      await this.canvas.loadFromJSON(json);
+      await this.restoreVideoElements();
       this.canvas.requestRenderAll();
       this.updateLayers();
     } else {
@@ -1507,6 +1623,7 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     const json = this.pages[index];
     if (json) {
       await this.canvas.loadFromJSON(json);
+      await this.restoreVideoElements();
       this.canvas.renderAll();
     } else {
       this.canvas.clear();
@@ -1517,22 +1634,72 @@ export class CreativeEditor implements OnInit, AfterViewInit, OnDestroy {
     await new Promise(r => setTimeout(r, 50));
   }
 
-  saveDocument() {
+  async saveDocument() {
+    this.isSaving = true;
     this.savePageState(); // Ensure current page is saved to this.pages array
 
-    const documentData = {
-      name: this.documentName,
-      width: this.docWidth,
-      height: this.docHeight,
-      unit: this.docUnit,
-      backgroundColor: this.canvasBgColor,
-      pages: this.pages, // This contains the Fabric JSON strings
-      exportedAt: new Date().toISOString()
+    // Generate thumbnail always from page 1 (index 0)
+    let thumbnailUrl = '';
+    try {
+      if (this.currentPageIndex === 0) {
+        // Already on page 1, just capture
+        thumbnailUrl = this.canvas.toDataURL({ format: 'png', quality: 0.4, multiplier: 0.25 });
+      } else {
+        // Temporarily load page 1 for thumbnail (loadPageForExport doesn't call savePageState)
+        await this.loadPageForExport(0);
+        thumbnailUrl = this.canvas.toDataURL({ format: 'png', quality: 0.4, multiplier: 0.25 });
+        // Restore back to the current page
+        await this.loadPageForExport(this.currentPageIndex);
+        await this.restoreVideoElements();
+        this.canvas.requestRenderAll();
+        this.updateLayers();
+      }
+    } catch (e) {
+      console.warn('Thumbnail generation failed', e);
+    }
+
+    const now = Date.now();
+    const magazine: Magazine = {
+      id: this.documentId || this.generateDocId(),
+      title: this.documentName,
+      createdAt: this.documentId ? (this.magazineService.getMagazine(this.documentId)?.createdAt || now) : now,
+      updatedAt: now,
+      settings: {
+        width: this.docWidth,
+        height: this.docHeight,
+        unit: this.docUnit,
+        canvasBgColor: this.canvasBgColor
+      },
+      pages: this.pages,
+      thumbnailUrl
     };
 
-    console.log('--- SAVING DOCUMENT DATA ---');
-    console.log(documentData);
-    alert('Document data has been logged to the console.');
+    try {
+      this.magazineService.saveMagazine(magazine);
+    } catch (e: any) {
+      console.error('Save failed:', e);
+      if (e?.name === 'QuotaExceededError' || e?.code === 22) {
+        alert('Save failed: Storage quota exceeded. Your design contains large images. Try using smaller images or image URLs instead of device uploads.');
+      } else {
+        alert('Save failed: ' + (e?.message || 'Unknown error'));
+      }
+      this.isSaving = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // If this was a new document, update URL without destroying the component
+    if (!this.documentId) {
+      this.documentId = magazine.id;
+      this.location.replaceState('/edit/' + magazine.id);
+    }
+
+    this.isSaving = false;
+    this.cdr.detectChanges();
+  }
+
+  private generateDocId(): string {
+    return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
   }
 
   help() {

@@ -12,9 +12,9 @@ import { MagazineService } from '../services/magazine.service';
     <div class="list-container">
       <div class="glass-header">
         <div class="header-content">
-          <h1>My Creative Magazines</h1>
+          <h1>My Creative Designs</h1>
           <button class="new-btn" (click)="createNew()">
-            <span class="icon">+</span> New Publication
+            <span class="icon">+</span> New Design
           </button>
         </div>
       </div>
@@ -31,27 +31,53 @@ import { MagazineService } from '../services/magazine.service';
         <div class="grid">
           <div *ngFor="let mag of magazines" class="mag-card">
             <div class="card-thumb">
-               <img [src]="'https://via.placeholder.com/300x400?text=' + mag.title" alt="thumb">
+               <img *ngIf="mag.thumbnailUrl" [src]="mag.thumbnailUrl" alt="Design thumbnail">
+               <div *ngIf="!mag.thumbnailUrl" class="thumb-placeholder">
+                 <i class="pi pi-image"></i>
+                 <span>No preview</span>
+               </div>
                <div class="overlay">
-                  <button class="action-btn view" (click)="view(mag.id)">View Full Screen</button>
+                  <button class="action-btn view" (click)="edit(mag.id)">Open in Editor</button>
                </div>
             </div>
             <div class="card-info">
               <div class="meta">
                 <h3>{{mag.title}}</h3>
-                <p>{{mag.updatedAt | date:'mediumDate'}}</p>
+                <p>{{mag.updatedAt | date:'medium'}}</p>
+                <div class="meta-details">
+                  <span class="badge">{{mag.pages.length}} page{{mag.pages.length !== 1 ? 's' : ''}}</span>
+                  <span class="badge">{{mag.settings.width}} × {{mag.settings.height}} {{mag.settings.unit}}</span>
+                </div>
               </div>
-              <button class="edit-btn" (click)="edit(mag.id)">
-                Edit Design
-              </button>
+              <div class="card-actions">
+                <button class="edit-btn" (click)="edit(mag.id)">
+                  <i class="pi pi-pencil"></i> Edit
+                </button>
+                <button class="delete-btn" (click)="confirmDelete(mag)">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
           
           <div *ngIf="magazines.length === 0" class="empty-state">
              <div class="empty-icon">🎨</div>
-             <h2>No designs found</h2>
-             <p>Start your first travel magazine design today!</p>
+             <h2>No designs yet</h2>
+             <p>Start your first creative design today!</p>
              <button (click)="createNew()" class="create-first-btn">Get Started</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation Modal -->
+      <div class="modal-backdrop" *ngIf="deleteTarget" (click)="deleteTarget = null">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-icon">🗑️</div>
+          <h3>Delete "{{deleteTarget.title}}"?</h3>
+          <p>This action cannot be undone. All pages and design data will be permanently lost.</p>
+          <div class="modal-actions">
+            <button class="modal-cancel" (click)="deleteTarget = null">Cancel</button>
+            <button class="modal-delete" (click)="deleteConfirmed()">Delete</button>
           </div>
         </div>
       </div>
@@ -113,9 +139,17 @@ import { MagazineService } from '../services/magazine.service';
     }
     .mag-card:hover { transform: translateY(-12px); border-color: var(--primary-light); box-shadow: 0 30px 60px -12px rgba(20, 184, 166, 0.15); }
     
-    .card-thumb { height: 400px; position: relative; overflow: hidden; background: #f1f5f9; }
-    .card-thumb img { width: 100%; height: 100%; object-fit: cover; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-    .mag-card:hover .card-thumb img { transform: scale(1.1); }
+    .card-thumb { height: 220px; position: relative; overflow: hidden; background: #f1f5f9; }
+    .card-thumb img { width: 100%; height: 100%; object-fit: contain; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); background: #f8fafc; padding: 8px; }
+    .mag-card:hover .card-thumb img { transform: scale(1.05); }
+
+    .thumb-placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #94a3b8; gap: 0.5rem;
+    }
+    .thumb-placeholder i { font-size: 3rem; }
+    .thumb-placeholder span { font-size: 0.85rem; font-weight: 600; }
     
     .overlay { 
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; 
@@ -131,23 +165,70 @@ import { MagazineService } from '../services/magazine.service';
     .mag-card:hover .action-btn.view { transform: translateY(0); }
     .action-btn.view:hover { background: var(--primary-dark); color: white; }
 
-    .card-info { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-    .meta h3 { margin: 0; font-size: 1.3rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
-    .meta p { margin: 0.4rem 0 0; font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
+    .card-info { padding: 1.2rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+    .meta h3 { margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+    .meta p { margin: 0.3rem 0 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+    .meta-details { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .badge {
+      background: #f1f5f9; color: #64748b; padding: 0.2rem 0.6rem;
+      border-radius: 100px; font-size: 0.7rem; font-weight: 700;
+      border: 1px solid #e2e8f0;
+    }
     
+    .card-actions { display: flex; gap: 0.5rem; }
     .edit-btn { 
-      width: 100%; padding: 0.9rem; background: var(--bg-main); color: var(--primary-dark); border: 1.5px solid var(--primary-light); 
+      flex: 1; padding: 0.7rem; background: var(--bg-main); color: var(--primary-dark); border: 1.5px solid var(--primary-light); 
       border-radius: var(--radius-md); cursor: pointer; font-weight: 700; transition: all 0.3s;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
     }
     .edit-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .delete-btn {
+      padding: 0.7rem 1rem; background: #fff5f5; color: #ef4444; border: 1.5px solid #fecaca;
+      border-radius: var(--radius-md); cursor: pointer; font-weight: 700; transition: all 0.3s;
+    }
+    .delete-btn:hover { background: #ef4444; color: white; border-color: #ef4444; }
 
     .empty-state { grid-column: 1/-1; text-align: center; padding: 6rem; background: var(--white); border-radius: var(--radius-lg); border: 2px dashed var(--primary-light); }
     .empty-icon { font-size: 4rem; margin-bottom: 1.5rem; }
     .create-first-btn { margin-top: 2rem; background: var(--primary); color: white; padding: 1rem 3rem; border-radius: 100px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(20, 184, 166, 0.3); }
+
+    /* Delete Confirmation Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+    .modal-content {
+      background: white; border-radius: var(--radius-lg); padding: 2.5rem;
+      max-width: 400px; width: 90%; text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      animation: slideUp 0.3s ease;
+    }
+    .modal-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .modal-content h3 { margin: 0 0 0.5rem; font-size: 1.3rem; font-weight: 800; color: var(--text-main); }
+    .modal-content p { margin: 0 0 1.5rem; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: center; }
+    .modal-cancel {
+      padding: 0.7rem 1.5rem; background: #f1f5f9; border: 1px solid #e2e8f0; color: var(--text-main);
+      border-radius: var(--radius-md); cursor: pointer; font-weight: 700; transition: all 0.2s;
+    }
+    .modal-cancel:hover { background: #e2e8f0; }
+    .modal-delete {
+      padding: 0.7rem 1.5rem; background: #ef4444; border: none; color: white;
+      border-radius: var(--radius-md); cursor: pointer; font-weight: 700; transition: all 0.2s;
+    }
+    .modal-delete:hover { background: #dc2626; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   `]
 })
 export class MagazineList implements OnInit {
   magazines: Magazine[] = [];
+  deleteTarget: Magazine | null = null;
+
   constructor(private router: Router, private magazineService: MagazineService) {}
 
   ngOnInit() {
@@ -155,11 +236,23 @@ export class MagazineList implements OnInit {
   }
 
   loadMagazines() {
-    this.magazines = this.magazineService.getMagazines();
+    this.magazines = this.magazineService.getMagazines()
+      .sort((a, b) => b.updatedAt - a.updatedAt); // Most recent first
   }
 
   createNew() { this.router.navigate(['/edit']); }
   edit(id: string) { this.router.navigate(['/edit', id]); }
-  view(id: string) { this.router.navigate(['/view', id]); }
   navigate(path: string) { this.router.navigate([path]); }
+  
+  confirmDelete(mag: Magazine) {
+    this.deleteTarget = mag;
+  }
+
+  deleteConfirmed() {
+    if (this.deleteTarget) {
+      this.magazineService.deleteMagazine(this.deleteTarget.id);
+      this.deleteTarget = null;
+      this.loadMagazines();
+    }
+  }
 }
